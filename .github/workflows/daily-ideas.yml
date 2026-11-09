@@ -1,54 +1,66 @@
-name: Daily Saudi Digital Product Idea Discovery
+name: Daily Saudi Digital Product Idea Discovery & GitHub Pages Deploy
 
 on:
   schedule:
-    # Runs every day at 05:00 UTC (08:00 AM Saudi Arabia Time / AST)
-    - cron: '0 5 * * *'
-  workflow_dispatch: # Allows manual 1-click run from the GitHub Actions tab
+    # Runs every day at 01:30 UTC (09:30 AM Asia/Singapore / 04:30 AM AST) and 06:30 UTC (09:30 AM AST)
+    - cron: '30 1 * * *'
+  push:
+    branches: [ main ]
+    paths:
+      - 'LATEST_IDEAS.md'
+      - 'docs/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
   issues: write
+  pages: write
+  id-token: write
 
 jobs:
-  discover-ideas:
+  discover-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout BAJAMIL/ideas
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
+        if: github.event_name != 'push'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run Autonomous Antigravity Agent
+      - name: Install dependencies & Run Antigravity Agent
+        if: github.event_name != 'push'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
           python agent.py
+          cp LATEST_IDEAS.md docs/LATEST_IDEAS.md
 
-      - name: Commit & Push Daily Report
+      - name: Sync LATEST_IDEAS.md to docs/ for GitHub Pages
+        run: |
+          mkdir -p docs
+          cp LATEST_IDEAS.md docs/LATEST_IDEAS.md
+
+      - name: Commit & Push Updated Report and Pages
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/ LATEST_IDEAS.md
+          git add reports/ LATEST_IDEAS.md docs/
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             TODAY=$(date -u +"%Y-%m-%d")
-            git commit -m "feat(ideas): daily Saudi & Arabic digital product report ($TODAY)"
+            git commit -m "feat(ideas): update daily Saudi report & GitHub Pages ($TODAY)"
             git push
           fi
 
-      - name: Open Daily GitHub Issue Summary
-        if: success()
+      - name: Open Daily GitHub Issue (Triggers Email & Mobile Alert)
+        if: github.event_name != 'push' && success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -58,3 +70,15 @@ jobs:
               --title "🇸🇦 Daily Saudi Digital Product Ideas ($TODAY)" \
               --body-file "LATEST_IDEAS.md" || true
           fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

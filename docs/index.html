@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BAJAMIL | باجميل — Daily Saudi Digital Product Ideas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card: #131b2e;
+      --border: #23304d;
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.15);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
+      line-height: 1.75;
+      padding: 2rem 1rem 4rem;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    header {
+      background: linear-gradient(135deg, #131b2e 0%, #0f2922 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+    .brand h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .brand p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+    }
+    .badge {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .report-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.25rem;
+      direction: ltr;
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    .report-card h1, .report-card h2, .report-card h3 {
+      color: #fff;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+    }
+    .report-card h1 { font-size: 1.6rem; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; }
+    .report-card h2 { font-size: 1.3rem; color: var(--accent); }
+    .report-card h3 { font-size: 1.1rem; }
+    .report-card p, .report-card li { color: #cbd5e1; margin-bottom: 0.55rem; }
+    .report-card ul, .report-card ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .report-card code {
+      background: rgba(255, 255, 255, 0.08);
+      color: #34d399;
+      padding: 0.15rem 0.4rem;
+      border-radius: 6px;
+      font-size: 0.9em;
+    }
+    .report-card blockquote {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-glow);
+      padding: 0.85rem 1.1rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0;
+      color: #e2e8f0;
+    }
+    .report-card table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.25rem 0;
+      font-size: 0.92rem;
+    }
+    .report-card th, .report-card td {
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+      text-align: left;
+    }
+    .report-card th {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+    .report-card hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 1.75rem 0;
+    }
+    .report-card a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>🇸🇦 BAJAMIL | باجميل — محرك أفكار المنتجات الرقمية</h1>
+        <p>تقرير يومي مؤتمت بالذكاء الاصطناعي لأفضل فرص المنتجات الرقمية والـ Micro-SaaS في السوق السعودي والعربي</p>
+      </div>
+      <div>
+        <a class="badge" href="https://github.com/BAJAMIL/ideas/issues" target="_blank">📬 سجل التقارير والتنبيهات (GitHub Issues)</a>
+      </div>
+    </header>
+
+    <main id="content" class="report-card">
+      <p>جاري تحميل أحدث تقرير يومي...</p>
+    </main>
+  </div>
+
+  <script>
+    async function loadLatestReport() {
+      const container = document.getElementById('content');
+      try {
+        const res = await fetch('./LATEST_IDEAS.md?t=' + Date.now());
+        if (!res.ok) throw new Error('Could not load LATEST_IDEAS.md');
+        const md = await res.text();
+        container.innerHTML = marked.parse(md);
+      } catch (err) {
+        container.innerHTML = '<p>تعذر تحميل التقرير المباشر. يرجى مراجعة <a href="https://github.com/BAJAMIL/ideas">مستودع BAJAMIL/ideas</a>.</p>';
+      }
+    }
+    loadLatestReport();
+  </script>
+</body>
+</html>
