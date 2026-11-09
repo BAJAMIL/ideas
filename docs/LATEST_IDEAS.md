@@ -28,7 +28,7 @@ Live queries against **Google Saudi Arabia Autocomplete (`gl=sa`, `hl=ar`)** rev
 If you want to sell **physical products** in Saudi Arabia via **Salla (سلة)**, **TikTok Shop / TikTok Ads**, or **Haraj (حراج)** using **Makhdroop / Dropshipping** or small batch imports from **1688 / Alibaba**:
 
 | Rank | Physical Product Category (Arabic / English) | Why It Sells in Saudi Arabia | Landed Cost (SAR) | Retail Price (SAR) | Gross Markup |
-| :--- | :--- | :--- | :--- | :---: | :---: |
+| :--- | :--- | :--- | :---: | :---: | :---: |
 | **#1** | **إكسسوارات السيت أب والقيمنق للشباب**<br>*(Custom Arabic Keycaps, Coiled Cables, RGB Desk Mats & Anime/Gaming Decor)* | Saudi teens & gamers spend heavily on bedroom/PC setups; highly visual for TikTok/Reels impulse buys. | **15 – 35 SAR** | **99 – 189 SAR** | **4x – 5.5x** |
 | **#2** | **أدوات القهوة المختصة والماتشا المتنقلة**<br>*(Portable Espresso Makers, V60 Travel Kits & Aesthetic Matcha Sets)* | Specialty coffee (`قهوة مختصة`) and matcha are daily lifestyle rituals for Saudi youth & uni students. | **35 – 65 SAR** | **169 – 279 SAR** | **3.5x – 4.5x** |
 | **#3** | **إكسسوارات السيارات الذكية وحماية الصيف**<br>*(Custom Fit Sunshades, Wireless CarPlay Adapters, Dashcams & Car Bakhoor Burners)* | Every Saudi adult/teen drives daily; `مبخرة سيارة إلكترونية` (electric car bakhoor) & CarPlay screens go viral on TikTok SA. | **25 – 60 SAR** | **129 – 249 SAR** | **3.5x – 5x** |
