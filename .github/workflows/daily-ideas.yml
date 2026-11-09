@@ -1,0 +1,60 @@
+name: Daily Saudi Digital Product Idea Discovery
+
+on:
+  schedule:
+    # Runs every day at 05:00 UTC (08:00 AM Saudi Arabia Time / AST)
+    - cron: '0 5 * * *'
+  workflow_dispatch: # Allows manual 1-click run from the GitHub Actions tab
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  discover-ideas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout BAJAMIL/ideas
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Autonomous Antigravity Agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python agent.py
+
+      - name: Commit & Push Daily Report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/ LATEST_IDEAS.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            TODAY=$(date -u +"%Y-%m-%d")
+            git commit -m "feat(ideas): daily Saudi & Arabic digital product report ($TODAY)"
+            git push
+          fi
+
+      - name: Open Daily GitHub Issue Summary
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TODAY=$(date -u +"%Y-%m-%d")
+          if [ -f "LATEST_IDEAS.md" ]; then
+            gh issue create \
+              --title "🇸🇦 Daily Saudi Digital Product Ideas ($TODAY)" \
+              --body-file "LATEST_IDEAS.md" || true
+          fi
