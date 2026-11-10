@@ -52,6 +52,47 @@ class NoonClient:
         }
         self.client = httpx.Client(headers=self.headers, timeout=timeout)
 
+    def _fetch_raw_json(self, params: Dict[str, Any], locale: str) -> Optional[Dict[str, Any]]:
+        """Fetches raw JSON from Noon using httpx, with Playwright browser-grade TLS fallback."""
+        # 1. Fast httpx try (sub-second on direct connections)
+        try:
+            resp = self.client.get(
+                self.SEARCH_API,
+                params=params,
+                headers={"x-locale": locale},
+                timeout=3.0,
+            )
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception:
+            pass
+
+        # 2. Resilient Browser-Grade TLS Fallback (Bypasses Akamai TLS tarpit)
+        try:
+            import urllib.parse
+            from playwright.sync_api import sync_playwright
+
+            query_str = urllib.parse.urlencode(params)
+            target_url = f"{self.SEARCH_API}?{query_str}"
+            p = sync_playwright().start()
+            try:
+                req = p.request.new_context(
+                    extra_http_headers={
+                        "Accept": "application/json",
+                        "x-platform": "web",
+                        "x-locale": locale,
+                    }
+                )
+                res = req.get(target_url, timeout=7000)
+                if res.status == 200:
+                    return res.json()
+            finally:
+                p.stop()
+        except Exception:
+            pass
+        return None
+
+
     def search_catalog(
         self,
         query: str,
@@ -79,20 +120,12 @@ class NoonClient:
         if sort:
             params["sort"] = sort
 
-        try:
-            resp = self.client.get(
-                self.SEARCH_API,
-                params=params,
-                headers={"x-locale": locale},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
+        data = self._fetch_raw_json(params, locale)
+        if not data:
             return {
                 "total": 0,
                 "page": page,
                 "products": [],
-                "error": str(e),
             }
 
         nb_hits = data.get("nbHits", 0)

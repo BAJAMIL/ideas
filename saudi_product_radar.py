@@ -29,6 +29,7 @@ import httpx
 # Import verified clients
 from jarir_client import JarirClient, JarirProduct
 from extra_client import ExtraClient, ExtraProduct
+from noon_client import NoonClient, NoonProduct
 from haraj_client import HarajClient, PostItem
 from opensooq_client import OpenSooqClient, OpenSooqListing
 from salla_client import SallaMarketplaceClient
@@ -110,6 +111,7 @@ class SaudiProductRadar:
     def __init__(self, timeout: float = 12.0):
         self.jarir = JarirClient(timeout=timeout)
         self.extra = ExtraClient(timeout=timeout)
+        self.noon = NoonClient(timeout=timeout)
         self.haraj = HarajClient(timeout=timeout)
         self.opensooq = OpenSooqClient(timeout=timeout)
         self.salla = SallaMarketplaceClient(timeout=timeout)
@@ -209,6 +211,32 @@ class SaudiProductRadar:
                 )
         except Exception as e:
             print(f"[!] Warning: eXtra benchmark query failed: {e}")
+
+        # 3. Noon Search
+        try:
+            noon_res = self.noon.search_catalog(query, limit=limit)
+            for p in noon_res.get("products", []):
+                orig = p.was_price or p.price
+                save = max(0.0, round(orig - p.price, 2))
+                pct = p.discount_percentage or (round((save / orig) * 100, 1) if orig > p.price else 0.0)
+                image_url = f"https://f.nooncdn.com/p/{p.image_key}.jpg" if p.image_key else ""
+                benchmarks.append(
+                    RetailBenchmark(
+                        source="Noon KSA",
+                        sku=p.sku,
+                        title=p.title,
+                        current_price_sar=p.price,
+                        original_price_sar=orig,
+                        discount_amount=save,
+                        discount_pct=pct,
+                        image_url=image_url,
+                        product_url=p.url or f"https://www.noon.com/saudi-en/{p.sku}/p/",
+                        brand=p.brand,
+                        specs={"is_express": p.is_express, "rating": p.rating, "reviews": p.rating_count},
+                    )
+                )
+        except Exception as e:
+            print(f"[!] Warning: Noon benchmark query failed: {e}")
 
         # Sort benchmarks by price ascending
         benchmarks.sort(key=lambda x: x.current_price_sar)
