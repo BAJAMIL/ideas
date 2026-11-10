@@ -103,6 +103,24 @@ def main():
     export_p.add_argument("--lang", default="en", choices=["en", "ar"])
     export_p.add_argument("--limit", type=int, default=50)
 
+    # Command: categories (Full category taxonomy tree, product counts & icons)
+    cats_p = subparsers.add_parser("categories", help="Explore complete Jarir category taxonomy tree, icons & product counts")
+    cats_p.add_argument("--tree", action="store_true", help="Print full hierarchical category tree with all subcategories")
+    cats_p.add_argument("--parent", help="Filter by parent category slug or code (e.g. 'electronics-mobiles', 'books')")
+    cats_p.add_argument("--lang", default="en", choices=["en", "ar"], help="Language index")
+    cats_p.add_argument("--json", action="store_true", help="Output raw JSON taxonomy")
+
+    # Command: category (Lookup single category details)
+    cat_p = subparsers.add_parser("category", help="Lookup details, icons, and subcategories for a category")
+    cat_p.add_argument("identifier", help="Category slug, code, or name (e.g. 'smartphones', '21001', 'bags-travel-accessories')")
+    cat_p.add_argument("--lang", default="en", choices=["en", "ar"], help="Language index")
+
+    # Command: browse (Browse products in a category)
+    browse_p = subparsers.add_parser("browse", help="Browse products in a category")
+    browse_p.add_argument("category", help="Category slug, code, or name (e.g. 'laptops', 'smartphones')")
+    browse_p.add_argument("--limit", type=int, default=10, help="Number of products to show")
+    browse_p.add_argument("--lang", default="en", choices=["en", "ar"], help="Language index")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -272,6 +290,83 @@ def main():
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump({"total": res["total"], "query": args.query, "items": data}, f, ensure_ascii=False, indent=2)
         print(f"[✓] Successfully saved {len(data)} items to {args.output}!")
+
+    elif args.command == "categories":
+        tree = client.get_category_tree(lang=args.lang)
+
+        if args.parent:
+            parent_cat = client.get_category(args.parent, lang=args.lang)
+            if not parent_cat:
+                print(f"[!] Parent category '{args.parent}' not found.")
+                sys.exit(1)
+            tree = parent_cat.get("subcategories", [])
+            print(f"[*] Showing subcategories for '{parent_cat.get('name')}' ({len(tree)} found):")
+        else:
+            print(f"[*] Jarir Bookstore Category Taxonomy (Shop By Category Menu):")
+            print(f"    Total Departments: {len(tree)} | Live catalog mapped with Akeneo CDN Icons & product counts.\n")
+
+        if args.json:
+            print(json.dumps(tree, ensure_ascii=False, indent=2))
+            return
+
+        for i, c in enumerate(tree, 1):
+            name = c.get("name")
+            code = c.get("category_code")
+            slug = c.get("slug")
+            count = c.get("product_count", 0)
+            icon = c.get("icon")
+            sub_count = c.get("subcategories_count", len(c.get("subcategories", [])))
+
+            print(f"{i:2d}. {name} [Code: {code} | Slug: {slug}]")
+            print(f"    Products: {count:,} items | Subcategories: {sub_count}")
+            print(f"    URL:      {c.get('url')}")
+            if icon:
+                print(f"    Icon:     {icon}")
+
+            if args.tree and c.get("subcategories"):
+                for sub in c.get("subcategories", []):
+                    sub_name = sub.get("name")
+                    sub_code = sub.get("category_code")
+                    sub_count_val = sub.get("product_count", 0)
+                    print(f"      ├── {sub_name} (Code: {sub_code}, Products: {sub_count_val:,})")
+                    if sub.get("subcategories"):
+                        for sub3 in sub.get("subcategories", [])[:3]:
+                            print(f"      │    └── {sub3.get('name')} (Code: {sub3.get('category_code')})")
+            print()
+
+    elif args.command == "category":
+        cat = client.get_category(args.identifier, lang=args.lang)
+        if not cat:
+            print(f"[!] Category '{args.identifier}' not found in taxonomy tree.")
+            sys.exit(1)
+
+        print(f"[*] Category Details: {cat.get('name')}")
+        print(f"  Code:          {cat.get('category_code')}")
+        print(f"  ID:            {cat.get('id')}")
+        print(f"  Slug:          {cat.get('slug')}")
+        print(f"  Level:         {cat.get('level')}")
+        print(f"  Product Count: {cat.get('product_count', 0):,} items")
+        print(f"  Menu Color:    #{cat.get('color')}" if cat.get('color') else "  Menu Color:    N/A")
+        print(f"  URL:           {cat.get('url')}")
+        print(f"  Icon CDN:      {cat.get('icon')}")
+        subs = cat.get("subcategories", [])
+        print(f"  Subcategories: {len(subs)}")
+        for s in subs:
+            print(f"    - {s.get('name')} (Code: {s.get('category_code')}, Products: {s.get('product_count', 0):,})")
+
+    elif args.command == "browse":
+        print(f"[*] Browsing products for category '{args.category}' (limit={args.limit}, lang={args.lang})...")
+        res = client.browse_category(args.category, num_results=args.limit, lang=args.lang)
+        print(f"[✓] Found {res['total']} products total. Showing top {len(res['products'])}:\n")
+        for i, p in enumerate(res["products"], 1):
+            disc_str = f" [Saved {p.discount_amount} SAR]" if p.discount_amount else ""
+            author_str = f" | Author: {p.author}" if p.author else ""
+            format_str = f" | Format: {p.book_format}" if p.book_format else ""
+            print(f"{i:2d}. {p.title}")
+            print(f"    Price: {p.price:,.2f} SAR{disc_str} | SKU: {p.sku} | Brand: {p.brand or 'N/A'}{author_str}{format_str}")
+            if p.url:
+                print(f"    URL:   {p.url}")
+            print()
 
 
 if __name__ == "__main__":

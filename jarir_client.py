@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import json
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 import urllib.parse
 import httpx
@@ -83,6 +84,24 @@ class JarirProduct:
     def direct_cdn_image(self) -> str:
         """Returns direct high-resolution Akeneo CDN image URL."""
         return f"https://ak-asset.jarir.com/akeneo-prod/asset/saas/{self.sku}.jpg"
+
+
+@dataclass
+class JarirCategory:
+    name: str
+    slug: str
+    category_code: str
+    id: Optional[int] = None
+    product_count: int = 0
+    level: int = 1
+    url: str = ""
+    icon: str = ""
+    color: str = ""
+    subcategories: List[Dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def subcategories_count(self) -> int:
+        return len(self.subcategories)
 
 
 @dataclass
@@ -404,6 +423,84 @@ class JarirClient:
         return JarirSearchSuggestion(
             query=query,
             suggested_products=products if products else queries,
+        )
+
+    def get_category_tree(self, lang: str = "en", force_refresh: bool = False) -> List[Dict[str, Any]]:
+        """
+        Retrieves the complete live multi-level category taxonomy tree.
+        Includes icons, codes, URLs, product counts, and subcategories.
+        """
+        cache_file = (
+            Path(__file__).parent / f"jarir_taxonomy_{lang}.json"
+            if lang != "en"
+            else Path(__file__).parent / "jarir_taxonomy_tree.json"
+        )
+        if not force_refresh and cache_file.exists():
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+
+        try:
+            from build_jarir_taxonomy import extract_category_tree
+            tree = extract_category_tree(lang)
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(tree, f, ensure_ascii=False, indent=2)
+            return tree
+        except Exception:
+            if cache_file.exists():
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            return []
+
+    def get_category(self, identifier: str, lang: str = "en") -> Optional[Dict[str, Any]]:
+        """
+        Finds a category or subcategory by slug, category code, id, or exact name.
+        """
+        ident_clean = str(identifier).strip().lower().replace(".html", "")
+        tree = self.get_category_tree(lang=lang)
+
+        def search_node(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+            slug = str(node.get("slug", "")).lower()
+            code = str(node.get("category_code", "")).lower()
+            name = str(node.get("name", "")).lower()
+            cid = str(node.get("id", "")).lower()
+            if ident_clean in (slug, code, name, cid):
+                return node
+            for child in node.get("subcategories", []):
+                found = search_node(child)
+                if found:
+                    return found
+            return None
+
+        for cat in tree:
+            found = search_node(cat)
+            if found:
+                return found
+        return None
+
+    def browse_category(
+        self,
+        identifier: str,
+        page: int = 1,
+        num_results: int = 24,
+        lang: str = "en",
+        sort_by: Optional[str] = None,
+        sort_order: str = "descending",
+    ) -> Dict[str, Any]:
+        """
+        Browse products inside a specific category slug or category code.
+        """
+        cat = self.get_category(identifier, lang=lang)
+        query = cat.get("name") if cat else identifier
+        return self.search_products(
+            query=query,
+            lang=lang,
+            page=page,
+            num_results=num_results,
+            sort_by=sort_by,
+            sort_order=sort_order,
         )
 
 
