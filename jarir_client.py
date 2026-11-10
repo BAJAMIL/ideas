@@ -6,14 +6,16 @@ Powered by Jarir's live AI Discovery & Search Engine (Constructor.io).
 Features:
 - Dual Arabic (ar-SA) and English (en-SA) search indexes.
 - Real-time product pricing (SAR), discounts, SKUs, and stock information.
+- Granular hardware facet filtering: RAM (symm), Storage (tsca), OS (opsy), Screen Size (scsz), Color (cofa), Brand, and Price Range.
+- Direct SKU lookup and high-res media URL generation on Akeneo CDN.
 - Autocomplete and real-time search term suggestions.
-- Category catalog hierarchy extraction.
 - High-yield market gap and price disparity detection for Saudi electronics, computers, books, and accessories.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 from typing import Any, Dict, List, Optional
 import urllib.parse
 import httpx
@@ -33,6 +35,11 @@ class JarirProduct:
     categories: List[str] = field(default_factory=list)
     discount_amount: Optional[float] = None
     raw_metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def direct_cdn_image(self) -> str:
+        """Returns direct high-resolution Akeneo CDN image URL."""
+        return f"https://ak-asset.jarir.com/akeneo-prod/asset/saas/{self.sku}.jpg"
 
 
 @dataclass
@@ -74,19 +81,35 @@ class JarirClient:
         page: int = 1,
         num_results: int = 24,
         brand: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        ram: Optional[str] = None,
+        storage: Optional[str] = None,
+        os: Optional[str] = None,
+        screen_size: Optional[str] = None,
+        color: Optional[str] = None,
+        year: Optional[str] = None,
         sort_by: Optional[str] = None,
         sort_order: str = "descending",
     ) -> Dict[str, Any]:
         """
-        Searches Jarir products by keyword in English or Arabic.
+        Searches Jarir products with multi-attribute facet filtering.
         
         Args:
-            query: Search query (e.g., 'laptop', 'iphone', 'طابعة', 'كتب')
+            query: Keyword to search (e.g. 'laptop', 'iphone', 'طابعة', 'بلايستيشن').
             lang: 'en' for English index, 'ar' for Arabic index.
             page: Page number (1-indexed).
-            num_results: Number of results to return per page (max 100).
-            brand: Optional filter by brand (e.g. 'Apple', 'HP', 'Sony').
-            sort_by: Optional sort attribute ('price', 'relevance').
+            num_results: Number of results to return per page.
+            brand: Filter by brand (e.g. 'Apple', 'HP', 'Sony', 'Samsung').
+            min_price: Minimum price in SAR.
+            max_price: Maximum price in SAR.
+            ram: Filter by RAM capacity (e.g. '16 GB RAM', '32 GB RAM').
+            storage: Filter by storage capacity (e.g. '512 GB', '1000 GB', '2 TB').
+            os: Filter by OS (e.g. 'macOS', 'Windows 11 Home', 'Windows 11 Pro').
+            screen_size: Filter by display size (e.g. '14\"', '15.6\"', '16\"').
+            color: Filter by color (e.g. 'Silver', 'Black', 'Grey').
+            year: Filter by release generation/year (e.g. '2025', '2026').
+            sort_by: Sort attribute ('price', 'relevance').
             sort_order: 'ascending' or 'descending'.
         """
         key = self._get_key(lang)
@@ -99,8 +122,28 @@ class JarirClient:
             "num_results_per_page": num_results,
         }
 
+        # Apply range filter for price: filters[price]=min-max
+        if min_price is not None or max_price is not None:
+            min_val = int(min_price) if min_price is not None else 0
+            max_val = int(max_price) if max_price is not None else 999999
+            params["filters[price]"] = f"{min_val}-{max_val}"
+
+        # Granular hardware facets
         if brand:
             params["filters[brand]"] = brand
+        if ram:
+            params["filters[symm]"] = ram
+        if storage:
+            params["filters[tsca]"] = storage
+        if os:
+            params["filters[opsy]"] = os
+        if screen_size:
+            params["filters[scsz]"] = screen_size
+        if color:
+            params["filters[cofa]"] = color
+        if year:
+            params["filters[gere]"] = year
+
         if sort_by:
             params["sort_by"] = sort_by
             params["sort_order"] = sort_order
@@ -115,39 +158,43 @@ class JarirClient:
         for r in data.get("results", []):
             item_data = r.get("data", {})
             metadata = item_data.get("metadata", {}) or {}
-            
-            # Parse price
+
             raw_price = item_data.get("price") or metadata.get("price") or 0.0
             try:
                 price_val = float(raw_price)
             except (ValueError, TypeError):
                 price_val = 0.0
 
-            # Extract categories from GTM metadata if present
+            # Extract discount from GTM if available
             gtm_raw = metadata.get("additionalDataToReturn")
             categories = []
+            discount_amount = None
             if gtm_raw and isinstance(gtm_raw, str):
                 try:
-                    import json
                     parsed_gtm = json.loads(gtm_raw)
                     categories = parsed_gtm.get("GTM_categories", [])
+                    save_val = parsed_gtm.get("GTM_product_save")
+                    if save_val:
+                        discount_amount = float(save_val)
                 except Exception:
                     pass
 
             p_url = item_data.get("url")
             full_url = f"{self.JARIR_BASE_URL}/sa-{lang}/{p_url}" if p_url else None
+            sku_val = str(item_data.get("sku") or item_data.get("id") or "")
 
             items.append(
                 JarirProduct(
-                    sku=str(item_data.get("sku") or item_data.get("id") or ""),
+                    sku=sku_val,
                     title=r.get("value", ""),
                     price=price_val,
                     brand=metadata.get("brand") or item_data.get("brand"),
                     model=metadata.get("model"),
                     description=item_data.get("description"),
                     url=full_url,
-                    image_url=item_data.get("image_url"),
+                    image_url=item_data.get("image_url") or f"https://ak-asset.jarir.com/akeneo-prod/asset/saas/{sku_val}.jpg",
                     categories=categories,
+                    discount_amount=discount_amount,
                     raw_metadata=metadata,
                 )
             )
@@ -159,13 +206,21 @@ class JarirClient:
             "facets": data.get("facets", []),
         }
 
+    def get_product_by_sku(self, sku: str, lang: str = "en") -> Optional[JarirProduct]:
+        """Looks up an exact product by its SKU."""
+        res = self.search_products(sku, lang=lang, num_results=1)
+        for p in res.get("products", []):
+            if p.sku == str(sku):
+                return p
+        return res["products"][0] if res.get("products") else None
+
     def get_search_suggestions(self, query: str, lang: str = "en") -> JarirSearchSuggestion:
         """Fetch instant search autocomplete and product recommendations."""
         key = self._get_key(lang)
         encoded = urllib.parse.quote(query)
         url = f"{self.CONSTRUCTOR_API_BASE}/autocomplete/{encoded}"
 
-        resp = self.client.get(url, params={"key": key, "num_results_per_section": 5})
+        resp = self.client.get(url, params={"key": key, "num_results_per_section": 6})
         resp.raise_for_status()
         data = resp.json()
 
@@ -180,10 +235,7 @@ class JarirClient:
 
 
 def fetch_jarir_consumer_signals(max_items: int = 10) -> List[Dict[str, Any]]:
-    """
-    Standard discovery hook for BAJAMIL Ideas agent.
-    Mines trending electronics, tech accessories, and laptops from Jarir.
-    """
+    """Standard discovery hook for BAJAMIL Ideas agent."""
     signals = []
     client = JarirClient()
 
