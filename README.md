@@ -11,12 +11,16 @@ An autonomous daily research agent powered by the **Google Antigravity SDK (`goo
    - `customer-research` — Mines real Arabic & English verbatim pain points.
    - `evaluating-startup-ideas` & `idea-validation` — Scores ideas on demand, speed to build, and competition gap in KSA.
    - `offers` — Designs a complete Grand Slam Offer priced in SAR (`ر.س`).
-3. **100% Free Data Sources Queried Every Run:**
-   - **Reddit Free JSON API:** Mines `r/saudiarabia`, `r/SaudiProfessionals`, and `r/Riyadh` for problems, workarounds, and questions.
+3. **100% Free Data Sources Queried Every Run (Zero Paid APIs):**
+   - **Multi-Tier Saudi Reddit Engine:** Mines `r/saudiarabia`, `r/SaudiProfessionals`, and `r/Riyadh` via Atom/RSS query feeds and Arctic Shift fallback, completely bypassing Reddit's 403 rate-limiting walls.
+   - **Mostaql Verified Paid Projects:** Scrapes active freelance and business project requests directly from Mostaql to see what Saudi & Arab clients are actively paying for right now.
+   - **Khamsat Unmet Service Requests:** Mines the "طلبات الخدمات غير الموجودة" community board to discover unbuilt software, automations, and digital tools buyers are pleading for.
+   - **Haraj Marketplace Demands (`haraj_client.py`):** Reverse-engineered from Saudi Arabia's largest marketplace (`haraj.com.sa`) to track real-time consumer listings and physical product arbitrage across high-margin categories (Car gadgets, Specialty Coffee, Camping/Kashta, Gathering games, Gaming gear).
+   - **Google News Saudi Arabia RSS (`hl=ar`, `gl=SA`):** Tracks real-time Saudi retail, e-commerce, startup, and fintech news developments.
    - **Google Saudi Autocomplete API (`gl=sa`, `hl=ar` & `hl=en`):** Uncovers real-time search demand for Arabic Notion templates (`قالب نوشن`), Excel sheets (`نموذج إكسل`), calculators (`حاسبة`), Salla/Zid tools, and ZATCA helpers.
-   - **Google Trends Saudi Arabia RSS (`geo=SA`):** Captures daily rising topics across KSA.
+   - **Google Trends Saudi Arabia RSS (`geo=SA`):** Captures daily rising search spikes across KSA.
    - **Hacker News Algolia API & Product Hunt Feed:** Spots newly validated global digital products and micro-SaaS tools ready to be localized for Arabic RTL and Saudi buyers.
-   - **Antigravity Built-in Web Search (`SEARCH_WEB` & `READ_URL_CONTENT`):** Researches Salla App Store, Zid, Mostaql, and Khamsat demand.
+   - **Automated Quality Filtering & Signal Tagging:** Prunes HTML noise, deduplicates near-identical titles, and automatically tags signals into `PAIN_POINT`, `UNMET_NEED`, `PAID_DEMAND`, and `MARKET_NEWS`.
 4. **Daily Output:**
    - Saves a dated report in `reports/YYYY-MM-DD.md` and updates `LATEST_IDEAS.md`.
    - Opens a new **GitHub Issue** so you get a mobile/email notification with the day's top ideas.
