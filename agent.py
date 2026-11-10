@@ -173,7 +173,7 @@ def search_saudi_reddit(
 
     # Tier 3: Subreddit hot/new .rss stream
     if not results:
-        sub_rss_url = f"https://www.reddit.com/r/{subreddit}/.rss"
+        sub_rss_url = f"https://www.reddit.com/r/{subreddit}/new.rss?limit={limit}"
         try:
             with httpx.Client(headers=HEADERS, timeout=12.0, follow_redirects=True) as client:
                 resp = client.get(sub_rss_url)
@@ -550,18 +550,24 @@ async def run_daily_discovery() -> Path:
 {market_data}
 ---
 
-Synthesize these live signals into a complete, professional, and actionable Markdown report in Bilingual format (English structure + Arabic product terms/copy):
+Synthesize these live signals into an executive, highly actionable Markdown report in Bilingual format (English structure + Arabic product terms/copy):
 
 ## Part 1: Live Saudi Market Signals & Verbatim Pain Points
-- Identify 3–5 real pain points and high-interest topics from the mined Reddit posts, Mostaql paid project requests, autocomplete keywords, and news trends. Include verbatim quotes/terms where applicable.
+- Identify 3–5 real pain points, trending consumer search spikes, and product pricing arbitrage from the mined Haraj marketplace data, Reddit posts, Mostaql paid project requests, autocomplete keywords, and news trends.
+- Include verbatim quotes/terms where applicable (e.g. buyer bids from Haraj 'السوم', exact search terms, verbatim complaints).
 
-## Part 2: Top 5 Validated Product Ideas for KSA
+## Part 2: Top 5 Validated Product Ideas for KSA (The Arbitrage & Opportunity Matrix)
 For each idea (mixing high-margin physical products and zero-inventory consumer digital products):
 1. **Product Name** (Arabic & English)
-2. **Category** (Digital Template / Micro-SaaS / Physical High-Markup 3x–6x)
+2. **Category** (Digital Template / Micro-SaaS / Physical High-Markup 3x–6x / Salla-Zid Plugin)
 3. **Target Saudi Audience** (Youth, Gamers, Women, Salla Merchants, Istiraha Gatherings, etc.)
-4. **Demand Score (1-10)**, **Build/Source Speed (1-10)**, **Competition Gap (1-10)**
-5. **Pricing Strategy in SAR (ر.س)** (Impulse-buy sweet spots, Tabby/Tamara installment options)
+4. **Market Arbitrage & Pricing Matrix in SAR (ر.س)**:
+   - Estimated Wholesale / Sourcing Cost (1688 / Taobao / Local Wholesale) in SAR
+   - Current Haraj Secondary Market Selling Price in SAR
+   - Target Salla / TikTok Shop Retail Price in SAR
+   - Gross Margin Multiple (e.g. 4.5x Markup)
+   - Tabby / Tamara installment breakdown (e.g. 4x monthly payments)
+5. **Scores**: Demand Score (1-10), Build/Source Speed (1-10), Competition Gap (1-10)
 
 ## Part 3: Deep-Dive Grand Slam Offer Blueprint for Idea #1
 - **Arabic Product Name & Hook**
@@ -570,6 +576,7 @@ For each idea (mixing high-margin physical products and zero-inventory consumer 
 - **Risk-Reversal Guarantee** (e.g. 100% money-back if not satisfied within 14 days)
 - **Launch Plan**: Exact 48-Hour Validation Plan on X (Twitter), TikTok Shop / Salla / Gumroad with Arabic copy hooks.
 """
+
 
     # Step 2: Generate report using OpenRouter free models (or Gemini fallback)
     if openrouter_key:
