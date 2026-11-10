@@ -1,16 +1,22 @@
 """
 Unified Saudi & Regional Marketplace Intelligence Registry
-Provides a unified API to query all reverse-engineered Saudi platforms:
-  1. Haraj (Consumer & Electronics Classifieds)
-  2. OpenSooq (General Classifieds & Direct Contact)
-  3. Salla App Store (Merchant Apps & E-Commerce Micro-SaaS)
-  4. Aqar (Real Estate & Housing Rental/Sale)
-  5. Syarah (Automotive & Financing)
-  6. Sabbar (Hourly, Operational & Retail Jobs)
+Provides a unified API to query all reverse-engineered Saudi enterprise platforms:
+  1. Jarir Bookstore (Laptops, Tech, Gadgets, Books, School & Office Supplies)
+  2. eXtra Stores (Electronics, Appliances, Discounts, Deals)
+  3. Noon KSA (E-Commerce Catalog, Pricing, Delivery, Ratings)
+  4. Haraj (Consumer & Electronics Classifieds)
+  5. OpenSooq (General Classifieds & Direct Contact)
+  6. Salla App Store (Merchant Apps & E-Commerce Micro-SaaS)
+  7. Aqar (Real Estate & Housing Rental/Sale)
+  8. Syarah (Automotive & Financing)
+  9. Sabbar (Hourly, Operational & Retail Jobs)
 """
 
 from typing import Dict, Any, List
 import time
+from jarir_client import JarirClient, fetch_jarir_consumer_signals
+from extra_client import ExtraClient, fetch_extra_consumer_signals
+from noon_client import NoonClient, fetch_noon_consumer_signals
 from haraj_client import HarajClient
 from opensooq_client import OpenSooqClient
 from salla_client import SallaMarketplaceClient
@@ -23,6 +29,9 @@ class MarketplaceRegistry:
     """Central gateway for all reverse-engineered platforms."""
 
     def __init__(self):
+        self.jarir = JarirClient()
+        self.extra = ExtraClient()
+        self.noon = NoonClient()
         self.haraj = HarajClient()
         self.opensooq = OpenSooqClient()
         self.salla = SallaMarketplaceClient()
@@ -31,10 +40,55 @@ class MarketplaceRegistry:
         self.sabbar = SabbarClient()
 
     def run_health_check(self) -> Dict[str, Any]:
-        """Test live connectivity and data extraction across all 6 targets."""
+        """Test live connectivity and data extraction across all connected targets."""
         report = {}
 
-        # 1. Haraj
+        # 1. Jarir Bookstore
+        t0 = time.time()
+        try:
+            res = self.jarir.search_products("laptop", lang="en", num_results=3)
+            prods = res.get("products", [])
+            report["Jarir Bookstore"] = {
+                "status": "ONLINE",
+                "items_count": len(prods),
+                "total_available": res.get("total", 0),
+                "latency_sec": round(time.time() - t0, 2),
+                "sample": f"{prods[0].title} ({prods[0].price} SAR)" if prods else None,
+            }
+        except Exception as e:
+            report["Jarir Bookstore"] = {"status": "ERROR", "error": str(e)}
+
+        # 2. eXtra Stores
+        t0 = time.time()
+        try:
+            res = self.extra.search_products("laptop", lang="en", rows=3)
+            prods = res.get("products", [])
+            report["eXtra Stores"] = {
+                "status": "ONLINE",
+                "items_count": len(prods),
+                "total_available": res.get("total", 0),
+                "latency_sec": round(time.time() - t0, 2),
+                "sample": f"{prods[0].title} ({prods[0].price} SAR)" if prods else None,
+            }
+        except Exception as e:
+            report["eXtra Stores"] = {"status": "ERROR", "error": str(e)}
+
+        # 3. Noon KSA
+        t0 = time.time()
+        try:
+            res = self.noon.search_catalog("laptop", lang="en", limit=3)
+            prods = res.get("products", [])
+            report["Noon KSA"] = {
+                "status": "ONLINE" if prods else "LIMITED",
+                "items_count": len(prods),
+                "total_available": res.get("total", 0),
+                "latency_sec": round(time.time() - t0, 2),
+                "sample": f"{prods[0].title} ({prods[0].price} SAR)" if prods else None,
+            }
+        except Exception as e:
+            report["Noon KSA"] = {"status": "ERROR", "error": str(e)}
+
+        # 4. Haraj
         t0 = time.time()
         try:
             items = self.haraj.search("RTX", limit=3)
@@ -42,12 +96,12 @@ class MarketplaceRegistry:
                 "status": "ONLINE",
                 "items_count": len(items),
                 "latency_sec": round(time.time() - t0, 2),
-                "sample": items[0].title if items else None
+                "sample": items[0].title if items else None,
             }
         except Exception as e:
             report["Haraj"] = {"status": "ERROR", "error": str(e)}
 
-        # 2. OpenSooq
+        # 5. OpenSooq
         t0 = time.time()
         try:
             items = self.opensooq.search(query="ايفون")
@@ -55,12 +109,12 @@ class MarketplaceRegistry:
                 "status": "ONLINE",
                 "items_count": len(items),
                 "latency_sec": round(time.time() - t0, 2),
-                "sample": items[0].title if items else None
+                "sample": items[0].title if items else None,
             }
         except Exception as e:
             report["OpenSooq"] = {"status": "ERROR", "error": str(e)}
 
-        # 3. Salla App Store
+        # 6. Salla App Store
         t0 = time.time()
         try:
             apps = self.salla.list_apps(limit=3)
@@ -68,12 +122,12 @@ class MarketplaceRegistry:
                 "status": "ONLINE",
                 "items_count": len(apps),
                 "latency_sec": round(time.time() - t0, 2),
-                "sample": f"{apps[0].name} ({apps[0].plan.price} {apps[0].plan.suffix or 'SAR'})" if apps else None
+                "sample": f"{apps[0].name} ({apps[0].plan.price} {apps[0].plan.suffix or 'SAR'})" if apps else None,
             }
         except Exception as e:
             report["Salla App Store"] = {"status": "ERROR", "error": str(e)}
 
-        # 4. Aqar
+        # 7. Aqar
         t0 = time.time()
         try:
             props = self.aqar.search_properties("شقق-للإيجار", "الرياض")
@@ -81,12 +135,12 @@ class MarketplaceRegistry:
                 "status": "ONLINE" if props else "RESTRICTED (Cloudflare 403 on cloud IP)",
                 "items_count": len(props),
                 "latency_sec": round(time.time() - t0, 2),
-                "sample": f"{props[0].title} ({props[0].price:,} SAR)" if props else "Requires residential IP/residential proxy"
+                "sample": f"{props[0].title} ({props[0].price:,} SAR)" if props else "Requires residential IP/residential proxy",
             }
         except Exception as e:
             report["Aqar (Real Estate)"] = {"status": "ERROR", "error": str(e)}
 
-        # 5. Syarah
+        # 8. Syarah
         t0 = time.time()
         try:
             cars = self.syarah.get_inventory()
@@ -100,12 +154,12 @@ class MarketplaceRegistry:
                 "status": "ONLINE",
                 "items_count": len(cars),
                 "latency_sec": round(time.time() - t0, 2),
-                "sample": sample_str
+                "sample": sample_str,
             }
         except Exception as e:
             report["Syarah (Cars)"] = {"status": "ERROR", "error": str(e)}
 
-        # 6. Sabbar
+        # 9. Sabbar
         t0 = time.time()
         try:
             jobs = self.sabbar.list_jobs()
@@ -113,7 +167,7 @@ class MarketplaceRegistry:
                 "status": "ONLINE",
                 "items_count": len(jobs),
                 "latency_sec": round(time.time() - t0, 2),
-                "sample": f"{jobs[0].title} ({jobs[0].company_name or 'N/A'})" if jobs else None
+                "sample": f"{jobs[0].title} ({jobs[0].company_name or 'N/A'})" if jobs else None,
             }
         except Exception as e:
             report["Sabbar (Gigs & Jobs)"] = {"status": "ERROR", "error": str(e)}
@@ -124,14 +178,54 @@ class MarketplaceRegistry:
         """Aggregates high-value market signals from all connected Saudi platforms for agent analysis."""
         sections = []
 
-        # 1. Haraj
+        # 1. Jarir Bookstore Retail & Tech Pricing Benchmarks
+        try:
+            jarir_sigs = fetch_jarir_consumer_signals(max_items=3)
+            jarir_lines = ["### Jarir Bookstore Retail Benchmarks & Category Pricing:"]
+            for s in jarir_sigs:
+                jarir_lines.append(
+                    f"- [JARIR_RETAIL] **{s['title']}** | Price: {s['price_sar']} SAR | SKU: {s['sku']} | Link: {s['url']}"
+                )
+            sections.append("\n".join(jarir_lines))
+        except Exception as e:
+            sections.append(f"### Jarir Bookstore:\n- [ERROR] {e}")
+
+        # 2. eXtra Stores Hot Deals & Discounts
+        try:
+            extra_sigs = fetch_extra_consumer_signals(max_items=3)
+            extra_lines = ["### eXtra Stores Consumer Deals & Electronics Margins:"]
+            for s in extra_sigs:
+                disc = f" ({s['discount_pct']}% OFF)" if "discount_pct" in s else ""
+                extra_lines.append(
+                    f"- [EXTRA_DEAL] **{s['title']}** | Price: {s['price_sar']} SAR{disc} | SKU: {s['sku']} | Link: {s['url']}"
+                )
+            sections.append("\n".join(extra_lines))
+        except Exception as e:
+            sections.append(f"### eXtra Stores:\n- [ERROR] {e}")
+
+        # 3. Noon KSA E-Commerce Pricing
+        try:
+            noon_sigs = fetch_noon_consumer_signals(max_items=3)
+            if noon_sigs:
+                noon_lines = ["### Noon KSA E-Commerce Catalog & Ratings:"]
+                for s in noon_sigs:
+                    rating_str = f" [★ {s['rating']}]" if "rating" in s else ""
+                    disc = f" ({s['discount_pct']}% OFF)" if "discount_pct" in s else ""
+                    noon_lines.append(
+                        f"- [NOON_BENCHMARK] **{s['title']}** | Price: {s['price_sar']} SAR{disc}{rating_str} | Link: {s['url']}"
+                    )
+                sections.append("\n".join(noon_lines))
+        except Exception as e:
+            sections.append(f"### Noon KSA:\n- [ERROR] {e}")
+
+        # 4. Haraj Secondary Market Demand
         try:
             from haraj_client import fetch_haraj_consumer_signals
             sections.append(fetch_haraj_consumer_signals(limit_per_cat=2))
         except Exception as e:
             sections.append(f"### Haraj Market Signals:\n- [ERROR] {e}")
 
-        # 2. Salla App Store
+        # 5. Salla App Store
         try:
             apps = self.salla.list_apps(limit=8)
             salla_lines = ["### Salla App Store Merchant Demands & Micro-SaaS Pricing:"]
@@ -143,7 +237,7 @@ class MarketplaceRegistry:
         except Exception as e:
             sections.append(f"### Salla App Store:\n- [ERROR] {e}")
 
-        # 3. OpenSooq
+        # 6. OpenSooq
         try:
             os_items = self.opensooq.search(query="ايفون", limit=5)
             os_lines = ["### OpenSooq Saudi Consumer Secondary Market Prices:"]
@@ -155,7 +249,7 @@ class MarketplaceRegistry:
         except Exception as e:
             sections.append(f"### OpenSooq:\n- [ERROR] {e}")
 
-        # 4. Syarah
+        # 7. Syarah
         try:
             cars = self.syarah.get_inventory()[:5]
             syarah_lines = ["### Syarah Saudi Automotive Inventory & Financing:"]
@@ -167,7 +261,7 @@ class MarketplaceRegistry:
         except Exception as e:
             sections.append(f"### Syarah:\n- [ERROR] {e}")
 
-        # 5. Sabbar
+        # 8. Sabbar
         try:
             jobs = self.sabbar.list_jobs()[:5]
             sabbar_lines = ["### Sabbar Saudi Operational Hiring & Salaries:"]
