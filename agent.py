@@ -1,7 +1,9 @@
 """Autonomous Daily Saudi & Arabic Digital Product Idea Discovery Agent.
 
-Built with the Google Antigravity SDK (`google-antigravity`) and equipped with:
-- Built-in Web Search (`SEARCH_WEB`) and URL Scraping (`READ_URL_CONTENT`)
+Equipped with:
+- Multi-provider AI engine supporting:
+  1. OpenRouter Free Models (nvidia/nemotron-3.5-lightning:free, google/gemma-4-31b-it:free, google/gemma-4-26b-a4b-it:free, thinkingmachines/inkling-2-small:free) with auto-failover
+  2. Google Antigravity SDK (`google-antigravity`) as alternate engine
 - 100% Free APIs tailored to the Saudi (KSA) & Arabic market:
   1. Reddit Saudi/GCC JSON API (`r/saudiarabia`, `r/SaudiProfessionals`, `r/Riyadh`, etc.)
   2. Google Autocomplete API localized to Saudi Arabia (`gl=sa`, `hl=ar` & `hl=en`)
@@ -21,11 +23,11 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import time
 import urllib.parse
 import xml.etree.ElementTree as ET
 
 from dotenv import load_dotenv
-from google.antigravity import Agent, LocalAgentConfig, types
 import httpx
 
 load_dotenv()
@@ -38,21 +40,21 @@ HEADERS = {
     "User-Agent": "BAJAMIL-SaudiIdeaAgent/1.0 (+https://github.com/BAJAMIL/ideas)"
 }
 
+OPENROUTER_FREE_MODELS = [
+    "nvidia/nemotron-3.5-lightning:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "thinkingmachines/inkling-2-small:free",
+    "liquid/lfm-2.5-2.6b:free",
+]
+
 
 def search_saudi_reddit(
     subreddit: str = "saudiarabia",
     query: str = "أحتاج OR مشكلة OR مشروع OR Salla OR tool OR app",
     limit: int = 15,
 ) -> str:
-    """Searches Saudi and Arabic subreddits using Reddit's free JSON API for pain points and product ideas.
-
-    Recommended subreddits: 'saudiarabia', 'SaudiProfessionals', 'Riyadh', 'Jeddah', 'arabs', 'SaaS', 'Entrepreneur'.
-
-    Args:
-        subreddit: The subreddit name without 'r/' (e.g., 'saudiarabia', 'SaudiProfessionals').
-        query: Search keywords in Arabic or English (e.g., 'سلة OR زد', 'مشكلة', 'spreadsheet', 'freelance').
-        limit: Number of recent matching posts to return (max 25).
-    """
+    """Searches Saudi and Arabic subreddits using Reddit's free JSON API for pain points and product ideas."""
     encoded_q = urllib.parse.quote(query)
     url = (
         f"https://www.reddit.com/r/{subreddit}/search.json"
@@ -88,12 +90,7 @@ def search_saudi_reddit(
 def search_saudi_google_autocomplete(
     seed_query: str, language: str = "ar"
 ) -> str:
-    """Queries the free Google Autocomplete API localized to Saudi Arabia (gl=sa) to uncover real buyer search demand.
-
-    Args:
-        seed_query: Partial search phrase in Arabic or English (e.g., 'قالب نوشن', 'نموذج إكسل', 'حاسبة', 'تطبيق لـ', 'saudi template').
-        language: Language code, 'ar' for Arabic or 'en' for English.
-    """
+    """Queries the free Google Autocomplete API localized to Saudi Arabia (gl=sa) to uncover real buyer search demand."""
     encoded_q = urllib.parse.quote(seed_query)
     url = (
         f"https://suggestqueries.google.com/complete/search"
@@ -142,12 +139,7 @@ def search_global_launches_for_saudi_localization(
     query: str = "Show HN OR Ask HN template OR micro-SaaS OR AI tool",
     limit: int = 12,
 ) -> str:
-    """Searches Hacker News Algolia API & Product Hunt RSS (100% free, no key) for global micro-SaaS and digital products that can be localized for Saudi Arabia / Arabic.
-
-    Args:
-        query: Search query for Hacker News Algolia API.
-        limit: Max items to fetch from each source.
-    """
+    """Searches Hacker News Algolia API & Product Hunt RSS (100% free, no key) for global micro-SaaS and digital products that can be localized for Saudi Arabia / Arabic."""
     output_sections = []
 
     # 1. Hacker News Algolia API
@@ -211,75 +203,153 @@ Focus on high-spending consumer & youth categories in Saudi Arabia:
    - High School & Uni Exam Prep (`ملخصات قدرات وتحصيلي`)
    - Ready-to-Use Saudi Family & Youth Travel Itineraries (`جدول سفر إيطاليا / أوروبا / إندونيسيا / اليابان`)
 
-Always apply your installed skills from `.agents/skills`:
-- `customer-research`: Extract verbatim Arabic & English signals from Saudi communities, Google Saudi Autocomplete, and web searches.
-- `evaluating-startup-ideas` & `idea-validation`: Score each idea on impulse-buy appeal, markup/margin in SAR, and TikTok/Snap virality in KSA.
-- `offers`: Construct Grand Slam Offers (bundling, bonuses, risk-reversal guarantee, and Tabby/Tamara/Apple Pay SAR pricing).
+Always apply your strategic skills:
+- Customer Research: Extract verbatim Arabic & English signals from Saudi communities, Google Saudi Autocomplete, and web searches.
+- Evaluating Startup Ideas & Validation: Score each idea on impulse-buy appeal, markup/margin in SAR, and TikTok/Snap virality in KSA.
+- Offers: Construct Grand Slam Offers (bundling, bonuses, risk-reversal guarantee, and Tabby/Tamara/Apple Pay SAR pricing).
 """
 
 
+def generate_with_openrouter(system_prompt: str, user_prompt: str, api_key: str) -> str:
+    """Queries OpenRouter using free models with automatic fallback on rate limit (429) or errors."""
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/BAJAMIL/ideas",
+        "X-Title": "BAJAMIL Ideas Discovery Agent",
+    }
+
+    last_error = None
+    for model in OPENROUTER_FREE_MODELS:
+        print(f"-> Attempting report generation with free model: {model}...")
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.7,
+        }
+        try:
+            with httpx.Client(timeout=120.0) as client:
+                resp = client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                )
+                if resp.status_code == 429:
+                    print(f"   [!] Model {model} rate-limited (429). Trying next free model...")
+                    last_error = f"Rate limited (429) on {model}"
+                    time.sleep(1)
+                    continue
+
+                resp.raise_for_status()
+                data = resp.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content and len(content.strip()) > 100:
+                    print(f"   [✓] Successfully generated report with {model}!")
+                    return content
+                else:
+                    print(f"   [!] Empty response from {model}, trying next...")
+        except Exception as exc:
+            print(f"   [!] Error with {model}: {exc}")
+            last_error = str(exc)
+            continue
+
+    raise RuntimeError(f"All free OpenRouter models failed. Last error: {last_error}")
+
+
 async def run_daily_discovery() -> Path:
-    """Runs the autonomous Antigravity agent and writes the daily Saudi digital product report."""
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
+    """Runs the autonomous idea discovery agent and writes the daily Saudi digital product report."""
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+
+    if not openrouter_key and not gemini_key:
         raise RuntimeError(
-            "Missing GEMINI_API_KEY environment variable. "
-            "Get a free key at https://aistudio.google.com/app/api-keys and add it to GitHub Secrets."
+            "Missing OPENROUTER_API_KEY or GEMINI_API_KEY environment variable. "
+            "Please configure OPENROUTER_API_KEY in GitHub Secrets or .env file."
         )
 
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     report_path = REPORTS_DIR / f"{today_str}.md"
 
-    config = LocalAgentConfig(
-        api_key=api_key,
-        system_instructions=SYSTEM_PROMPT,
-        skills_paths=[str(SKILLS_DIR)],
-        tools=[
-            search_saudi_reddit,
-            search_saudi_google_autocomplete,
-            fetch_saudi_google_trends,
-            search_global_launches_for_saudi_localization,
-        ],
-        capabilities=types.CapabilitiesConfig(
-            agent_behavior=types.AgentBehavior.AUTONOMOUS,
-            enabled_tools=[
-                types.BuiltinTools.SEARCH_WEB,
-                types.BuiltinTools.READ_URL_CONTENT,
-                types.BuiltinTools.VIEW_FILE,
-            ],
-        ),
-        budget_config=types.BudgetConfig(
-            max_model_calls=15,
-            max_tool_calls=25,
-        ),
-    )
+    # Step 1: Mine live Saudi market intelligence
+    print("[1/3] Mining live Saudi market signals across Reddit, Google Trends, Autocomplete, HN, and Product Hunt...")
+    signals = []
+    signals.append(search_saudi_reddit("saudiarabia", "أحتاج OR مشكلة OR مشروع OR Salla OR متجر OR فكرة"))
+    signals.append(search_saudi_reddit("SaudiProfessionals", "عمل OR دخل OR قالب OR أداة OR استشارة"))
+    signals.append(search_saudi_reddit("Riyadh", "فعاليات OR استراحة OR جمعة OR توصيل OR مشروع"))
 
-    prompt = f"""Today is {today_str}. Run a comprehensive daily discovery session for the Saudi Arabian (KSA) & Arabic digital products market:
+    for seed in ["قالب نوشن", "نموذج اكسل", "حاسبة", "متجر سلة"]:
+        signals.append(search_saudi_google_autocomplete(seed, language="ar"))
 
-1. Call `search_saudi_reddit` across `saudiarabia`, `SaudiProfessionals`, and `Riyadh` to mine recent complaints, workarounds, business needs, and questions.
-2. Call `search_saudi_google_autocomplete` in Arabic (`ar`) for seeds like `'قالب نوشن'`, `'نموذج اكسل'`, `'حاسبة'`, `'متجر سلة'` and in English (`en`) for `'saudi template'`, `'zatca'`.
-3. Call `fetch_saudi_google_trends` and `search_global_launches_for_saudi_localization` to see trending topics in KSA and global micro-SaaS/templates that lack an Arabic/Saudi version.
-4. Use `search_web` if needed to check Salla App Store, Zid, Mostaql, or Haraj trends.
-5. Synthesize your findings into a complete, actionable Markdown report in Bilingual format (English + Arabic terms/copy) containing:
-   - **Part 1: Live Saudi Market Signals & Verbatim Pain Points** (with links & quotes)
-   - **Part 2: Top 5 Validated Digital Product Ideas for KSA** (scored on Demand, Build Speed, Competition Gap, and Monetization in SAR)
-   - **Part 3: Deep-Dive Grand Slam Offer Blueprint for Idea #1** (using the `offers` skill: Arabic & English Product Name, Core Deliverable, Bonus Stack, Risk-Reversal Guarantee, Price in SAR, and 48-Hour Validation Plan on X/TikTok/Salla/Gumroad).
+    for seed in ["saudi template", "zatca invoice", "saudi digital product"]:
+        signals.append(search_saudi_google_autocomplete(seed, language="en"))
+
+    signals.append(fetch_saudi_google_trends())
+    signals.append(search_global_launches_for_saudi_localization())
+
+    market_data = "\n\n".join(signals)
+    print(f"      Gathered {len(market_data)} characters of live market intelligence.")
+
+    prompt = f"""Today is {today_str}. Analyze the following LIVE Saudi & Arabic market intelligence gathered today:
+
+---
+{market_data}
+---
+
+Synthesize these live signals into a complete, professional, and actionable Markdown report in Bilingual format (English structure + Arabic product terms/copy):
+
+## Part 1: Live Saudi Market Signals & Verbatim Pain Points
+- Identify 3–5 real pain points and high-interest topics from the mined Reddit posts, autocomplete keywords, and trends. Include verbatim quotes/terms where applicable.
+
+## Part 2: Top 5 Validated Product Ideas for KSA
+For each idea (mixing high-margin physical products and zero-inventory consumer digital products):
+1. **Product Name** (Arabic & English)
+2. **Category** (Digital Template / Micro-SaaS / Physical High-Markup 3x–6x)
+3. **Target Saudi Audience** (Youth, Gamers, Women, Salla Merchants, Istiraha Gatherings, etc.)
+4. **Demand Score (1-10)**, **Build/Source Speed (1-10)**, **Competition Gap (1-10)**
+5. **Pricing Strategy in SAR (ر.س)** (Impulse-buy sweet spots, Tabby/Tamara installment options)
+
+## Part 3: Deep-Dive Grand Slam Offer Blueprint for Idea #1
+- **Arabic Product Name & Hook**
+- **Core Deliverable**
+- **Bonus Stack** (2–3 high-perceived-value digital bonuses)
+- **Risk-Reversal Guarantee** (e.g. 100% money-back if not satisfied within 14 days)
+- **Launch Plan**: Exact 48-Hour Validation Plan on X (Twitter), TikTok Shop / Salla / Gumroad with Arabic copy hooks.
 """
 
-    async with Agent(config=config) as agent:
-        response = await agent.chat(prompt)
-        report_content = await response.text()
+    # Step 2: Generate report using OpenRouter free models (or Gemini fallback)
+    if openrouter_key:
+        print("[2/3] Generating report with OpenRouter free model engine...")
+        report_content = generate_with_openrouter(SYSTEM_PROMPT, prompt, openrouter_key)
+        engine_label = "OpenRouter Free Models (NVIDIA Nemotron / Google Gemma)"
+    else:
+        print("[2/3] Generating report with Google Antigravity SDK...")
+        from google.antigravity import Agent, LocalAgentConfig, types
 
+        config = LocalAgentConfig(
+            api_key=gemini_key,
+            system_instructions=SYSTEM_PROMPT,
+            skills_paths=[str(SKILLS_DIR)],
+        )
+        async with Agent(config=config) as agent:
+            response = await agent.chat(prompt)
+            report_content = await response.text()
+        engine_label = "Google Antigravity SDK Agent"
+
+    # Step 3: Save reports
+    print("[3/3] Saving discovery report...")
     header = (
         f"# 🇸🇦 BAJAMIL Daily Saudi & Arabic Digital Product Ideas — {today_str}\n\n"
-        f"> Automatically researched and generated by the **BAJAMIL Google Antigravity SDK Agent**.\n\n"
+        f"> Automatically researched and generated by the **BAJAMIL Ideas Agent** (Powered by {engine_label}).\n\n"
     )
     full_markdown = header + report_content.strip() + "\n"
 
     report_path.write_text(full_markdown, encoding="utf-8")
     (REPO_ROOT / "LATEST_IDEAS.md").write_text(full_markdown, encoding="utf-8")
-    print(f"Saved report to {report_path}")
+    print(f"[✓] Successfully saved report to {report_path} and LATEST_IDEAS.md")
     return report_path
 
 

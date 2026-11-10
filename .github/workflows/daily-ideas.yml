@@ -31,9 +31,10 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies & Run Antigravity Agent
+      - name: Install dependencies & Run Idea Agent
         if: github.event_name != 'push'
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python -m pip install --upgrade pip
