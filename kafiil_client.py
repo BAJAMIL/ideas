@@ -8,7 +8,11 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 import httpx
 import re
-from bs4 import BeautifulSoup
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
 
 
 @dataclass
@@ -41,33 +45,51 @@ class KafiilClient:
         if resp.status_code != 200:
             return []
 
-        soup = BeautifulSoup(resp.text, "html.parser")
         items = []
         seen = set()
 
-        links = soup.find_all("a", href=re.compile(r"/service/(\d+)"))
-        for a in links:
-            href = a.get("href", "")
-            m = re.search(r"/service/(\d+)", href)
-            if not m:
-                continue
-            item_id = m.group(1)
-            if item_id in seen:
-                continue
-            title = a.get_text(strip=True)
-            if not title or len(title) < 5:
-                continue
-            seen.add(item_id)
-
-            items.append(
-                KafiilItem(
-                    id=item_id,
-                    title=title,
-                    item_type="service",
-                    url=href if href.startswith("http") else f"{self.BASE_URL}{href}",
-                    category=category,
+        if BeautifulSoup:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            links = soup.find_all("a", href=re.compile(r"/service/(\d+)"))
+            for a in links:
+                href = a.get("href", "")
+                m = re.search(r"/service/(\d+)", href)
+                if not m:
+                    continue
+                item_id = m.group(1)
+                if item_id in seen:
+                    continue
+                title = a.get_text(strip=True)
+                if not title or len(title) < 5:
+                    continue
+                seen.add(item_id)
+                items.append(
+                    KafiilItem(
+                        id=item_id,
+                        title=title,
+                        item_type="service",
+                        url=href if href.startswith("http") else f"{self.BASE_URL}{href}",
+                        category=category,
+                    )
                 )
-            )
+        else:
+            matches = re.findall(r'<a[^>]+href="([^"]*?/service/(\d+)[^"]*?)"[^>]*>(.*?)</a>', resp.text, re.DOTALL)
+            for href, item_id, raw_title in matches:
+                if item_id in seen:
+                    continue
+                clean_title = re.sub(r'<[^>]+>', '', raw_title).strip()
+                if not clean_title or len(clean_title) < 5:
+                    continue
+                seen.add(item_id)
+                items.append(
+                    KafiilItem(
+                        id=item_id,
+                        title=clean_title,
+                        item_type="service",
+                        url=href if href.startswith("http") else f"{self.BASE_URL}{href}",
+                        category=category,
+                    )
+                )
         return items
 
     def get_projects(self) -> List[KafiilItem]:
@@ -77,34 +99,51 @@ class KafiilClient:
         if resp.status_code != 200:
             return []
 
-        soup = BeautifulSoup(resp.text, "html.parser")
         items = []
         seen = set()
 
-        links = soup.find_all("a", href=re.compile(r"/project/(\d+)"))
-        for a in links:
-            href = a.get("href", "")
-            m = re.search(r"/project/(\d+)", href)
-            if not m:
-                continue
-            item_id = m.group(1)
-            if item_id in seen:
-                continue
-            title = a.get_text(strip=True)
-            # Remove status badge prefixes if any (مفتوح / مكتمل)
-            clean_title = re.sub(r'^(مفتوح|مكتمل|قيد التنفيذ)\s*', '', title)
-            if not clean_title or len(clean_title) < 5:
-                continue
-            seen.add(item_id)
-
-            items.append(
-                KafiilItem(
-                    id=item_id,
-                    title=clean_title,
-                    item_type="project",
-                    url=href if href.startswith("http") else f"{self.BASE_URL}{href}",
+        if BeautifulSoup:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            links = soup.find_all("a", href=re.compile(r"/project/(\d+)"))
+            for a in links:
+                href = a.get("href", "")
+                m = re.search(r"/project/(\d+)", href)
+                if not m:
+                    continue
+                item_id = m.group(1)
+                if item_id in seen:
+                    continue
+                title = a.get_text(strip=True)
+                clean_title = re.sub(r'^(مفتوح|مكتمل|قيد التنفيذ)\s*', '', title)
+                if not clean_title or len(clean_title) < 5:
+                    continue
+                seen.add(item_id)
+                items.append(
+                    KafiilItem(
+                        id=item_id,
+                        title=clean_title,
+                        item_type="project",
+                        url=href if href.startswith("http") else f"{self.BASE_URL}{href}",
+                    )
                 )
-            )
+        else:
+            matches = re.findall(r'<a[^>]+href="([^"]*?/project/(\d+)[^"]*?)"[^>]*>(.*?)</a>', resp.text, re.DOTALL)
+            for href, item_id, raw_title in matches:
+                if item_id in seen:
+                    continue
+                clean_title = re.sub(r'<[^>]+>', '', raw_title).strip()
+                clean_title = re.sub(r'^(مفتوح|مكتمل|قيد التنفيذ)\s*', '', clean_title)
+                if not clean_title or len(clean_title) < 5:
+                    continue
+                seen.add(item_id)
+                items.append(
+                    KafiilItem(
+                        id=item_id,
+                        title=clean_title,
+                        item_type="project",
+                        url=href if href.startswith("http") else f"{self.BASE_URL}{href}",
+                    )
+                )
         return items
 
 
