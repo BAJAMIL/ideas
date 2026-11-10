@@ -30,4 +30,6 @@ deep_*.py
 list_modules.py
 analyze_jsonld.py
 search_comments_manifest.py
+probe_*.py
+parse_*.py
 

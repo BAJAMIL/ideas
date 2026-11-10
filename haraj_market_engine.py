@@ -39,6 +39,7 @@ def init_db():
 
 class HarajMarketEngine:
     def __init__(self):
+        init_db()
         self.client = HarajClient()
 
     def sync_keyword(self, keyword: str) -> Dict[str, Any]:

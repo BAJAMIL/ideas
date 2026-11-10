@@ -40,6 +40,7 @@ from dotenv import load_dotenv
 import httpx
 
 from haraj_client import fetch_haraj_consumer_signals
+from marketplace_registry import MarketplaceRegistry
 
 load_dotenv()
 
@@ -504,9 +505,14 @@ async def collect_market_intelligence() -> str:
     print("   [+] Mining Google Trends Saudi Arabia...")
     signals.append(fetch_saudi_google_trends())
 
-    # 6. Haraj Real Consumer Marketplace Demands (Reverse-engineered)
-    print("   [+] Mining Haraj real consumer marketplace demand across KSA...")
-    signals.append(fetch_haraj_consumer_signals(limit_per_cat=3))
+    # 6. Saudi Marketplaces & Enterprise Platforms (Haraj, Salla, OpenSooq, Syarah, Sabbar)
+    print("   [+] Mining unified Saudi enterprise marketplaces (Haraj, Salla, OpenSooq, Syarah, Sabbar)...")
+    try:
+        registry = MarketplaceRegistry()
+        signals.append(registry.collect_all_signals())
+    except Exception as exc:
+        print(f"       [!] Marketplace registry error: {exc}. Falling back to Haraj...")
+        signals.append(fetch_haraj_consumer_signals(limit_per_cat=3))
 
     # 7. Global launches for Saudi localization
     print("   [+] Mining Hacker News & Product Hunt launches...")
