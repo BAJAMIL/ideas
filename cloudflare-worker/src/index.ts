@@ -185,30 +185,35 @@ async function fetchNoon(query: string, lang: string) {
   const locale = lang === "ar" ? "ar-sa" : "en-sa";
   const targetUrl = `https://www.noon.com/_svc/catalog/api/v3/u/search?q=${encodeURIComponent(query)}&limit=10`;
 
-  const res = await fetch(targetUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      "x-platform": "web",
-      "x-locale": locale,
-    },
-  });
-  if (!res.ok) throw new Error(`Noon fetch failed: ${res.status}`);
+  try {
+    const res = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "x-platform": "web",
+        "x-locale": locale,
+      },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return { total: 0, products: [] };
 
-  const data: any = await res.json();
-  const hits = data.hits || [];
+    const data: any = await res.json();
+    const hits = data.hits || [];
 
-  return {
-    total: data.nbHits || 0,
-    products: hits.map((h: any) => ({
-      source: "Noon KSA",
-      sku: h.sku,
-      title: h.name,
-      price_sar: parseFloat(h.price || 0),
-      was_price_sar: h.was_price ? parseFloat(h.was_price) : null,
-      rating: h.rating?.value,
-      url: h.url ? `https://www.noon.com/saudi-${lang}/${h.url.replace(/^\//, "")}/p/` : null,
-    })),
-  };
+    return {
+      total: data.nbHits || 0,
+      products: hits.map((h: any) => ({
+        source: "Noon KSA",
+        sku: h.sku,
+        title: h.name,
+        price_sar: parseFloat(h.price || 0),
+        was_price_sar: h.was_price ? parseFloat(h.was_price) : null,
+        rating: h.rating?.value,
+        url: h.url ? `https://www.noon.com/saudi-${lang}/${h.url.replace(/^\//, "")}/p/` : null,
+      })),
+    };
+  } catch (e) {
+    return { total: 0, products: [] };
+  }
 }
 
 function jsonResponse(
