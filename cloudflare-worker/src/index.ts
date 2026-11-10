@@ -123,6 +123,15 @@ async function fetchJarir(query: string, lang: string, params: URLSearchParams) 
   const brand = params.get("brand");
   if (brand) targetUrl.searchParams.set("filters[brand]", brand);
 
+  const format = params.get("format") || params.get("bofo");
+  if (format) targetUrl.searchParams.set("filters[bofo]", format);
+
+  const categoryDesc = params.get("category_desc") || params.get("productcode_description");
+  if (categoryDesc) targetUrl.searchParams.set("filters[productcode_description]", categoryDesc);
+
+  const paperSize = params.get("size") || params.get("pasi");
+  if (paperSize) targetUrl.searchParams.set("filters[pasi]", paperSize);
+
   const ram = params.get("ram");
   if (ram) targetUrl.searchParams.set("filters[symm]", ram);
 
@@ -136,15 +145,23 @@ async function fetchJarir(query: string, lang: string, params: URLSearchParams) 
 
   return {
     total: data.response?.total_num_results || 0,
-    products: results.map((r: any) => ({
-      source: "Jarir Bookstore",
-      sku: r.data?.sku || r.data?.id,
-      title: r.value,
-      price_sar: parseFloat(r.data?.price || 0),
-      brand: r.data?.metadata?.brand || r.data?.brand,
-      url: r.data?.url ? `https://www.jarir.com/sa-${lang}/${r.data.url}` : null,
-      image: `https://ak-asset.jarir.com/akeneo-prod/asset/saas/${r.data?.sku || r.data?.id}.jpg`,
-    })),
+    products: results.map((r: any) => {
+      const meta = r.data?.metadata || {};
+      return {
+        source: "Jarir Bookstore",
+        sku: r.data?.sku || r.data?.id,
+        title: r.value,
+        price_sar: parseFloat(r.data?.price || meta.price || 0),
+        brand: meta.brand || r.data?.brand || null,
+        author: meta.auth || null,
+        book_format: meta.bofo || null,
+        isbn: meta.isbn || null,
+        paper_size: meta.pasi || null,
+        category: meta.productcode_description || null,
+        url: r.data?.url ? `https://www.jarir.com/sa-${lang}/${r.data.url}` : null,
+        image: `https://ak-asset.jarir.com/akeneo-prod/asset/saas/${r.data?.sku || r.data?.id}.jpg`,
+      };
+    }),
   };
 }
 
