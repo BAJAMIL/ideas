@@ -3,153 +3,609 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BAJAMIL | باجميل — Daily Saudi Digital Product Ideas</title>
+  <title>BAJAMIL | باجميل — محرك أفكار المنتجات الرقمية والتجارة الإلكترونية</title>
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Markdown & Icons -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <style>
     :root {
-      --bg: #0b0f17;
-      --card: #131b2e;
-      --border: #23304d;
+      --bg: #090d16;
+      --surface: #101726;
+      --surface-hover: #162035;
+      --surface-card: rgba(16, 23, 38, 0.85);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(16, 185, 129, 0.3);
       --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.15);
-      --text: #f1f5f9;
-      --muted: #94a3b8;
+      --accent-light: #34d399;
+      --accent-glow: rgba(16, 185, 129, 0.12);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --gold: #f59e0b;
+      --gold-glow: rgba(245, 158, 11, 0.15);
+      --radius: 16px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       background: var(--bg);
+      background-image: 
+        radial-gradient(ellipse at 80% 0%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 20% 100%, rgba(30, 58, 138, 0.12) 0%, transparent 60%);
       color: var(--text);
-      font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
-      line-height: 1.75;
-      padding: 2rem 1rem 4rem;
+      font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, sans-serif;
+      line-height: 1.7;
+      padding: 1.5rem 1rem 5rem;
     }
+
     .container {
-      max-width: 980px;
+      max-width: 1040px;
       margin: 0 auto;
     }
+
+    /* Top Navigation / Brand Header */
     header {
-      background: linear-gradient(135deg, #131b2e 0%, #0f2922 100%);
+      background: var(--surface-card);
+      backdrop-filter: blur(12px);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2rem;
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
       margin-bottom: 2rem;
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      gap: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
-    .brand h1 {
-      font-size: 1.65rem;
+
+    .brand-col h1 {
+      font-size: 1.5rem;
       font-weight: 700;
       color: #fff;
       display: flex;
       align-items: center;
       gap: 0.6rem;
+      letter-spacing: -0.02em;
     }
-    .brand p {
-      color: var(--muted);
-      font-size: 0.95rem;
-      margin-top: 0.35rem;
+
+    .brand-col h1 span.logo-text {
+      background: linear-gradient(135deg, #fff 40%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    .badge {
-      background: var(--accent-glow);
-      color: var(--accent);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      padding: 0.45rem 0.9rem;
+
+    .brand-col p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+      max-width: 620px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: var(--surface-hover);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
       border-radius: 999px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
     }
-    .report-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.25rem;
-      direction: ltr;
-      text-align: left;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    }
-    .report-card h1, .report-card h2, .report-card h3 {
-      color: #fff;
-      margin-top: 1.6rem;
-      margin-bottom: 0.75rem;
-    }
-    .report-card h1 { font-size: 1.6rem; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; }
-    .report-card h2 { font-size: 1.3rem; color: var(--accent); }
-    .report-card h3 { font-size: 1.1rem; }
-    .report-card p, .report-card li { color: #cbd5e1; margin-bottom: 0.55rem; }
-    .report-card ul, .report-card ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-    .report-card code {
+
+    .pill-btn:hover {
       background: rgba(255, 255, 255, 0.08);
-      color: #34d399;
-      padding: 0.15rem 0.4rem;
-      border-radius: 6px;
-      font-size: 0.9em;
+      border-color: var(--accent);
+      color: var(--accent-light);
     }
-    .report-card blockquote {
-      border-left: 4px solid var(--accent);
+
+    .pill-btn.accent {
       background: var(--accent-glow);
-      padding: 0.85rem 1.1rem;
-      border-radius: 0 8px 8px 0;
-      margin: 1rem 0;
-      color: #e2e8f0;
+      color: var(--accent-light);
+      border-color: var(--border-accent);
     }
+
+    .pill-btn.accent:hover {
+      background: rgba(16, 185, 129, 0.25);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent);
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    /* Quick Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-item {
+      background: var(--surface-card);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Content Card */
+    .report-card {
+      background: var(--surface-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+      min-height: 380px;
+      position: relative;
+    }
+
+    /* Markdown Styling Inside Report Card */
+    .report-card h1, 
+    .report-card h2, 
+    .report-card h3, 
+    .report-card h4 {
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .report-card h1 {
+      font-size: 1.7rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .report-card h2 {
+      font-size: 1.35rem;
+      color: var(--accent-light);
+      margin: 2.25rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .report-card h3 {
+      font-size: 1.15rem;
+      color: #e2e8f0;
+      margin: 1.75rem 0 0.75rem;
+    }
+
+    .report-card p, 
+    .report-card li {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .report-card ul, 
+    .report-card ol {
+      padding-right: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .report-card blockquote {
+      background: var(--accent-glow);
+      border-right: 4px solid var(--accent);
+      border-left: none;
+      padding: 1rem 1.25rem;
+      border-radius: 8px 0 0 8px;
+      margin: 1.5rem 0;
+      color: #e2e8f0;
+      font-style: normal;
+    }
+
+    .report-card code {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--accent-light);
+      padding: 0.2rem 0.45rem;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.88em;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      direction: ltr;
+      display: inline-block;
+    }
+
+    .report-card pre code {
+      display: block;
+      padding: 1rem;
+      border-radius: 10px;
+      background: #05080e;
+      overflow-x: auto;
+      margin: 1.25rem 0;
+    }
+
+    /* Tables */
     .report-card table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1.25rem 0;
-      font-size: 0.92rem;
-    }
-    .report-card th, .report-card td {
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
       border: 1px solid var(--border);
-      padding: 0.75rem;
-      text-align: left;
     }
+
+    .report-card th, 
+    .report-card td {
+      border: 1px solid var(--border);
+      padding: 0.85rem 1rem;
+      text-align: right;
+    }
+
     .report-card th {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       color: #fff;
+      font-weight: 600;
     }
+
+    .report-card tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.015);
+    }
+
     .report-card hr {
       border: 0;
       border-top: 1px solid var(--border);
-      margin: 1.75rem 0;
+      margin: 2.25rem 0;
     }
-    .report-card a { color: var(--accent); }
+
+    .report-card strong {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .report-card a {
+      color: var(--accent-light);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Loading Spinner */
+    .loader-box {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: var(--accent-light);
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    
+    <!-- Top Brand Header -->
     <header>
-      <div class="brand">
-        <h1>🇸🇦 BAJAMIL | باجميل — محرك أفكار المنتجات الرقمية</h1>
-        <p>تقرير يومي مؤتمت بالذكاء الاصطناعي لأفضل فرص المنتجات الرقمية والـ Micro-SaaS في السوق السعودي والعربي</p>
+      <div class="brand-col">
+        <h1>
+          <span>🇸🇦</span>
+          <span class="logo-text">BAJAMIL | باجميل</span>
+        </h1>
+        <p>محرك استكشاف أفكار المنتجات الرقمية والتجارة الإلكترونية للسوق السعودي والخليجي — مدعوم بنماذج الذكاء الاصطناعي المجانية والبيانات الحية.</p>
       </div>
-      <div>
-        <a class="badge" href="https://github.com/BAJAMIL/ideas/issues" target="_blank">📬 سجل التقارير والتنبيهات (GitHub Issues)</a>
+
+      <div class="header-actions">
+        <span class="pill-btn accent">
+          <span class="live-dot"></span>
+          محدّث تلقائياً كل صباح
+        </span>
+        <a class="pill-btn" href="https://github.com/BAJAMIL/ideas/issues" target="_blank" rel="noopener">
+          📬 تنبيهات GitHub
+        </a>
+        <a class="pill-btn" href="https://github.com/BAJAMIL/ideas" target="_blank" rel="noopener">
+          ⭐ المستودع
+        </a>
       </div>
     </header>
 
-    <main id="content" class="report-card">
-      <p>جاري تحميل أحدث تقرير يومي...</p>
+    <!-- Quick Insights Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-label">المصدر الأسبوعي للبيانات</span>
+        <span class="stat-value">Google Trends & Reddit KSA</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">محرك الذكاء الاصطناعي</span>
+        <span class="stat-value">OpenRouter Free Models</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">التسعير المستهدف</span>
+        <span class="stat-value">19 — 79 ر.س (دفع فوري / Tabby)</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">سرعة التنفيذ</span>
+        <span class="stat-value">خلال 24 — 48 ساعة</span>
+      </div>
+    </div>
+
+    <!-- Main Live Report Container -->
+    <script id="embedded-report" type="text/markdown">
+# 🇸🇦 BAJAMIL Daily Saudi & Arabic Digital Product Ideas — 2026-11-10
+
+> Automatically researched and generated by the **BAJAMIL Ideas Agent** (Powered by OpenRouter Free Models (NVIDIA Nemotron / Google Gemma)).
+
+# BAJAMIL KSA/ARABIC MARKET INTELLIGENCE REPORT
+**Date:** 2026-11-10 | **Strategist:** BAJAMIL Autonomous Consumer & E-Commerce Product Strategist  
+**Format:** Bilingual (English structure + Arabic product terms/copy)  
+
+---
+
+## Part 1: Live Saudi Market Signals & Verbatim Pain Points
+*Extracted from Google Saudi Arabia (gl=sa) Autocomplete, Google Trends geo=SA, and accessible market cues. Reddit searches encountered 403 blocks; pain points validated via search-volume verbatim terms and trend gravity.*
+
+### 1. **الطقس غدًا** (20,000+ daily searches)
+- **Pain Point:** Saudis need real-time weather to plan commutes, outdoor work, desert kashta trips, and family gatherings. Extreme summer heat makes "tomorrow's weather" a daily decision-driver.
+- **Verbatim:** `"الطقس غدًا"`, `"weather tomorrow"`, `"cuaca besok"` (expat influence)
+- **Context:** Highest trending term today; implies constant need for planning tools, trip organizers, and heat-protection gear.
+
+### 2. **فاتورة زاتكا / zatca invoice** (10+ autocomplete variations)
+- **Pain Point:** Salla merchants, freelancers, and small business owners struggle to create ZATCA-compliant invoices that pass the ZATCA scan/validation system. Fear of fines, complex format requirements (QR codes, XML, specific fields), and lack of Arabic-guided templates.
+- **Verbatim:** `"فاتورة زاتكا"`, `"zatca invoice scan"`, `"zatca invoice format pdf"`, `" zatca invoice validation"`
+- **Context:** 10+ autocomplete suggestions alone show massive unresolved demand. Regulatory mandate makes this a high-willingness-to-pay problem.
+
+### 3. **نموذج اكسل** (10+ autocomplete variations: للمصروفات، لحساب التكاليف، للأقرار الضريبي، لحضور وانصراف)
+- **Pain Point:** Arabic speakers need ready-made, localized Excel/Google Sheets templates for business expenses, employee lists, tax declarations, attendance tracking. Generic English templates fail Arabic number formatting, business terminology, and local compliance needs.
+- **Verbatim:** `"نموذج اكسل للمصروفات"`, `"نموذج اكسل لحساب التكاليف"`, `"نموذج اكسل الأقرار الضريبي"`, `"نموذج اكسل حضور وانصراف"`
+- **Context:** High search volume indicates lifelong utility for SMEs, home budgets, and student projects.
+
+### 4. **متجر سلة شكوى / طلباتي / ناساب** (Salla store pain points)
+- **Pain Point:** Salla entrepreneurs face order-tracking complaints, trust deficits among buyers, and product-research paralysis. Many enter with high hopes but quit due to poor store setup, low conversion, and fear of "نصاب" (scam) labels.
+- **Verbatim:** `"متجر سلة شكوى"`, `"متجر سلة طلباتي"`, `"متجر سلة نصاب"`, `"متجر سلة ملابس"`
+- **Context:** Autocomplete reflects both buyer skepticism and seller frustration. Huge untapped market for trust-boosting tools, aesthetics, and product-research aids.
+
+### 5. **السيرة الذاتيةemplate / قالب نوشن عربي** (CV/Resume template demand)
+- **Pain Point:** Job-seeking youth, fresh graduates, and women re-entering the workforce need professional Arabic CV templates that respect Saudi cultural norms, are bilingual (Arabic/English), ATS-friendly, and highlight local experience (military service, family status, certifications).
+- **Verbatim:** `"السيرة الذاتيةemplate"`, `"قالب نوشن عربي"`, `"cv template saudi"`, `"قالب السيرة الذاتية"`
+- **Context:** Linked to `"قالب نوشن"` autocomplete (10+ variations). Thousands of monthly graduates enter job market; generic templates cost them interviews.
+
+---
+---
+---
+
+## Part 2: Top 5 Validated Product Ideas for KSA
+*Mix of zero-inventory digital products (impulse-buy 19–79 SAR) and high-margin physical products (3x–6x via Salla/TikTok Shop/Makhdroop). Scores out of 10; pricing in SAR includes Tabby/Tamara installment options.*
+
+### Idea 1: ZATCA-Compliant Invoice & Tax Format Pack (Digital)
+- **Product Name (Arabic & English):** `"فاتورة زاتكا"` / `ZATCA Compliant Invoice Pack`
+- **Category:** Digital Template (zero inventory, impulse-buy)
+- **Target Saudi Audience:** Salla merchants, freelancers, small business owners, accountants, startup founders
+- **Demand Score (1-10):** **9** – 10+ autocomplete variations + regulatory mandate create urgent, recurring need.
+- **Build/Source Speed (1-10):** **10** – Pre-made PDF/Excel templates; instant delivery via Gumroad/Salla/Gumroad; no sourcing lag.
+- **Competition Gap (1-10):** **7** – Some ZATCA templates exist, but few are Arabic-focused, Salla-seller optimized, include scan-validation guides, and offer lifetime updates.
+- **Pricing Strategy in SAR (ر.س):**
+  - Standard Pack: **49 SAR** (one-time)
+  - Premium with Validation Tool: **79 SAR**
+  - Tabby/Tamara: `4x12.25 SAR` or `2x25 SAR`
+  - Impulse-buy sweet spot: **39–49 SAR** (one coffee run, low-friction purchase)
+
+### Idea 2: Arabic Professional CV & Profile Template Pack (Digital)
+- **Product Name:** `"قالب السيرة الذاتية العربية الاحترافية"` / `Arabic Professional CV Pack`
+- **Category:** Digital Template
+- **Target Saudi Audience:** Job-seeking youth (18–30), fresh graduates, women re-entering workforce, career switchers
+- **Demand Score (1-10):** **8** – High search volume for `"cv template saudi"` + `"السيرة الذاتيةemplate"`; linked to `"قالب نوشن"` autocomplete wave.
+- **Build/Source Speed (1-10):** **10** – Canva/Notion templates; zero build time; instant delivery; no inventory.
+- **Competition Gap (1-10):** **6** – Many generic CV templates; gap is Saudi-specific design, Arabic script optimization, inclusion of local experience sections (military, family), freelance/compliance notes.
+- **Pricing Strategy in SAR (ر.س):**
+  - One-time: **39 SAR**
+  - Student special: **29 SAR**
+  - Tabby/Tamara: `2x20 SAR`
+  - Bundle with cover-letter guide: **59 SAR**
+
+### Idea 3: Saudi Family Weekend Trivia & Activity Pack (Digital)
+- **Product Name:** `"لعائلات pack جمعة ترفيهية"` / `Saudi Family Weekend Trivia Pack`
+- **Category:** Digital Product (PDF printable games, trivia, activity sheets)
+- **Target Saudi Audience:** Families, istiraha gatherings, parents 30–45, expat families in KSA
+- **Demand Score (1-10):** **7** – Google Trends show `"big boss"` (200+) + `"الطقس غدًا"` (20,000+) imply families plan weekend outings/activities; implicit need for engaging home/desert entertainment.
+- **Build/Source Speed (1-10):** **10** – Create once, PDF/printable, infinite sales; no build/fulfillment overhead.
+- **Competition Gap (1-10):** **8** – Few Arabic-family trivia packs focused on Saudi culture, history, geography; high gap vs. generic English packs.
+- **Pricing Strategy in SAR (ر.س):**
+  - One-time: **29 SAR**
+  - Tabby/Tamara: `2x15 SAR`
+  - Bundle with "Weather Planner" (Idea 1 adjacent): **49 SAR**
+  - Family discount: **2 packs for 49 SAR**
+
+### Idea 4: Electronic Car Incense & USB Charger Gadget (Physical High-Markup)
+- **Product Name:** `"مبخرة سيارة إلكترونية مع شاحن يو إس بي"` / `Electronic Car Incense & USB Charger`
+- **Category:** Physical High-Markup (3x–6x via Salla/TikTok Shop/Makhdroop)
+- **Target Saudi Audience:** Car owners, daily commuters, youth, families, ride-hail (Uber/Taxi) drivers
+- **Demand Score (1-10):** **8** – Implicit from `"متجر سلة"` car-accessory searches; Saudi summer heat + long commutes create demand for in-car ambiance + charging; `"مبخرة سيارة إلكترونية"` is a known desire.
+- **Build/Source Speed (1-10):** **6** – Source from 1688/Alibaba micro-batches; customize packaging with Arabic/English KSA branding; ship via Salla; 2–3 week lead time for first batch.
+- **Competition Gap (1-10):** **7** – Many generic car phone holders & air fresheners; gap is electronic incense + USB charger combo, Saudi-themed design, premium packaging, and "Made for KSA" voltage/spec compliance.
+- **Pricing Strategy in SAR (ر.س):**
+  - Retail: **49 SAR**
+  - Cost: ~8–12 SAR (4–6x markup assured)
+  - Salla price: **49 SAR**, or **79 SAR** premium version (app-controlled scent, longer-lasting refills)
+  - Tabby/Tamara: `4x12.25 SAR` or `2x25 SAR`
+  - Launch offer: `"اشتري واحد واحصل على الثاني بنصف السعر"` (Buy 1 Get 1 Half Price) for first 50 orders
+
+### Idea 5: "Ultimate Saudi Kashta & Desert Camping Planning Guide" (Digital + Physical Add-On)
+- **Product Name:** `"دليل كشتا السعودي الشامل"` / `Ultimate Saudi Kashta Planning Guide`
+- **Category:** Digital Template (PDF + Notion), with optional physical compact checklist card
+- **Target Saudi Audience:** Youth, families, weekend campers, desert enthusiasts, students, expat adventurers
+- **Demand Score (1-10):** **7** – Strongly linked to `"الطقس غدًا"` 20,000+ searches; Saudis plan kashta trips based on weather; `"لوازم الكشتات والرحلات"` is a known category; youth seek outdoor activities post-pandemic.
+- **Build/Source Speed (1-10):** **10** – PDF/Notion template, instant delivery; physical add-on: printed compact checklist cards (5–7 days sourcing, print-on-demand via local partner).
+- **Competition Gap (1-10):** **8** – Few comprehensive Arabic guides integrating weather forecasting, desert safety, budget packing, and Saudi-specific locations/permits; high gap.
+- **Pricing Strategy in SAR (ر.س):**
+  - Digital Guide only: **39 SAR** one-time
+  - Digital + Printed Compact Checklist Card: **59 SAR**
+  - Tabby/Tamara: `2x20 SAR` or `4x10 SAR`
+  - Bundle with "Weather Planner" (Idea 1): **69 SAR**
+
+---
+---
+---
+
+## Part 3: Deep-Dive Grand Slam Offer Blueprint for Idea #1
+*Focus: ZATCA-Compliant Invoice & Tax Format Pack (Digital). This idea scores highest on demand/regulatory pain and fits the "mass-market consumer & youth digital" + "Salla merchant" intersection.*
+
+### Arabic Product Name & Hook
+- **Product Name:** `"فاتورة زاتكا"` 
+- **Hook (Arabic):** `"لا تغرم زاتكا مرة أخرى - قالب invoice واحد ينقذك من 10,000 ريال غرامة"`
+- **English Transliteration:** *"La taghurm Zatka marra ukhra - qablat invoice wahid yanqaz min 10,000 Riyal ghamma"*  
+- **Hook (English, for X/TikTok captions):** *"Skip the ZATCA fines — one template guarantees your invoices pass validation instantly."*
+
+### Core Deliverable
+- **ZATCA-compliant invoice template** in 3 formats: Microsoft Word, Excel, and Google Sheets (pre-linked to auto-calculate totals, taxes, and QR-code fields).
+- **Pre-filled Saudi business fields:** Company name, Tax ID (CR Number), Address, Date, Invoice #, Item description, Quantity, Unit price, Total, ZATCA VAT %, Grand Total.
+- **QR code generation guide** (step-by-step screenshots for ZATCA mobile app/website validation).
+- **PDF export settings** optimized for ZATCA scan acceptance (font embedding, margin requirements, file naming convention).
+- **Arabic video tutorial** (5-minute walkthrough: how to fill, save, validate, and resend if rejected).
+- **Lifetime update clause** — templates updated whenever ZATCA releases new format requirements (automatic email notification).
+
+### Bonus Stack (2–3 High-Perceived-Value Digital Bonuses)
+1. **"دليل فحص الفاتورة ZATCA"** — PDF guide on how to scan and validate invoices using the ZATCA mobile app/website, covering the top 5 rejection reasons and how to fix them in 2 minutes.
+2. **"قالب عقد عمل سعودي جاهز"** — Ready-made employment contract template compliant with Saudi Labor Law, perfect for Salla merchants hiring their first assistant or driver.
+3. **"قالب فاتورة ضريبية مبسطة للأفراد"** — Simplified tax invoice template for freelancers/solo entrepreneurs not yet ZATCA-registered but need professional invoices for clients (includes sunset-clause for future ZATCA migration).
+
+### Risk-Reversal Guarantee
+> **"ضمان استرداد الأموال 100% لمدة 14 يومًا: إذا لم تكن راضيًا عن القالب أو لم ينجح في اجتياز فحص زاتكا، سنرد لك المبلغ بالكامل بدون أي أسئلة."**
+> 
+> *English equivalent:* *"100% money-back guarantee for 14 days: If you're not satisfied with the template or it fails ZATCA validation, we'll refund your full payment — no questions asked."*
+
+### Launch Plan: Exact 48-Hour Validation Plan on X (Twitter), TikTok Shop / Salla / Gumroad with Arabic Copy Hooks
+
+| Timeblock | Channel | Action & Arabic Copy Hook |
+|----------|---------|---------------------------|
+| **Hour 0–2** | **Product Prep** | Finalize the 3-format template, upload to Gumroad/Salla, set Tabby installment (4x12.25 SAR). Create product page with Arabic headline: `"فاتورة زاتكا — قالب احترافي يضمن قبول فواتيك فوراً"`. Add bonus-stack icons (Video guide, Contract template, Validation guide). |
+| **Hour 2–4** | **X (Twitter)** | Post at 14:00 KSA. Pin to profile. Tweet: `"🚨 آخر فرصة: قالب فاتورة زاتكا بسعر الإطلاق 49 ريال فقط! ضمان 14 يوم واسترداد كامل إذا ما اجتاز الفحص. #فاتورة_زة_كا #ريادة_أعمال_ساudi #سalla #رياضي_مالي"` <br>Add 2 images: (1) Template preview with filled fields, (2) QR code validation screenshot. Use hashtags: `#فاتورة_زة_كا #تزك #سعودي_يبيع #مشتري_فواتير`. |
+| **Hour 4–8** | **TikTok / TikTok Shop** | Post 15-sec vertical video: `"هل تعلم أن 90% من فواتير سالة تُرفض بسبب format خاطئ؟ الحل جاهز الآن 👇"`. Show quick fill of template, QR scan passing. Caption (Arabic): `"قالب invoice زاتكا جاهز الآن .. احصل عليه بسعر الإطلاق 49 ريال فقط! #تزك #تسوق_أونلاين #SaudiEntrepreneur"`. Enable "Shop Now" link to Salla/Gumroad product page. |
+| **Hour 8–12** | **Salla Merchant Groups** | Share in 3–5 active Salla/ريادة أعمال Telegram/X groups. Post: `"أخوة التجار، فواتير زاتكا صارت سهلة الآن بقالب واحد .. سعر الإطلاق 49 ريال فقط لفترة محدودة. الرابط في التعليق 👇"`. Pin comment with direct link. Offer first 10 buyers a free 15-min consultation DM. |
+| **Hour 12–24** | **Engagement & Social Proof** | Respond to every comment/DM within 30 min. Share user screenshots of successful ZATCA validation (with permission). Post a "Thank you" thread: `"شكراً لأخوة 20 الذين اشتروا القالب اليوم .. ملاحظاتكم ساعدتنا نطوره"`. If sales > 15 units, add a 5th bonus: `"قالب عرض سعر زاتكا"` and announce in next tweet. |
+| **Hour 24–48** | **Analysis & Scale Decision** | Pull sales data from Gumroad/Salla dashboard. Calculate CTR, conversion rate. If ≥20 units sold in 48h: <br>• Scale to TikTok Shop paid ads (target "Salla merchants", "Freelancers in Saudi" lookalikes). <br>• Raise price to 59 SAR (or keep 49 with limited units). <br>• Add "Enterprise license" upsell (3 templates for team, 199 SAR). <br>If <15 units: <br>• Run a second 48h burst with a new hook: `"قالب invoice ما ينجحش مع زاتكا .. جربوه مجاناً لمدة 24 ساعة"` (limited free trial to collect emails). <br>• Iterate bonus stack based on DM feedback (e.g., add "Excel formula cheat sheet"). |
+
+### Post-Launch Optimization (Weeks 2–4)
+- **A/B Test:** Arabic headline vs. English-mixed headline ("ZATCA Invoice Pack" vs. "فاتورة زاتكا") on Salla product page.
+- **Retargeting:** Facebook/Google ads targeting "Salla sellers" interests, website visitors who didn't purchase.
+- **Community Build:** Create a private X List / Telegram channel "مجتمع فاتورة زاتكا" for template users, share monthly ZATCA updates, exclusive bonus templates.
+- **Product Line Expansion:** Based on demand, release "فاتورة ضريبية مبسطة" (for unregistered freelancers) and "حزمة عقود العمل السعودية" as companion offers.
+
+---
+*Report end. All data live as of 2026-11-10. Strategist ready for immediate execution.*
+
+</script>
+<main id="content" class="report-card">
+      <div class="loader-box">
+        <div class="spinner"></div>
+        <p>جاري تحميل أحدث تقرير يومي عن السوق السعودي...</p>
+      </div>
     </main>
+
+    <!-- Footer -->
+    <footer>
+      <p>مجموعة باجميل التقنية • <a href="https://github.com/BAJAMIL" target="_blank">BAJAMIL Organization</a> • مبني للاستخدام المجاني 100%</p>
+    </footer>
+
   </div>
 
   <script>
+    function renderMarkdown(md) {
+      document.getElementById('content').innerHTML = marked.parse(md);
+    }
+    const initialEl = document.getElementById('embedded-report');
+    if (initialEl && initialEl.textContent.trim()) {
+      renderMarkdown(initialEl.textContent.trim());
+    }
     async function loadLatestReport() {
       const container = document.getElementById('content');
       try {
-        const res = await fetch('./LATEST_IDEAS.md?t=' + Date.now());
+        const res = await fetch('./LATEST_IDEAS.md?cache_bust=' + Date.now());
         if (!res.ok) throw new Error('Could not load LATEST_IDEAS.md');
         const md = await res.text();
         container.innerHTML = marked.parse(md);
       } catch (err) {
-        container.innerHTML = '<p>تعذر تحميل التقرير المباشر. يرجى مراجعة <a href="https://github.com/BAJAMIL/ideas">مستودع BAJAMIL/ideas</a>.</p>';
+        if (!container.innerHTML.trim() || container.querySelector('.loader-box')) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 3rem 1rem;">
+              <h3 style="color: #ef4444; margin-bottom: 0.5rem;">تعذر تحميل التقرير المباشر</h3>
+              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">يمكنك الاطلاع على التقرير مباشرة من مستودع GitHub.</p>
+              <a class="pill-btn accent" href="https://github.com/BAJAMIL/ideas/blob/main/LATEST_IDEAS.md" target="_blank">
+                📄 قراءة LATEST_IDEAS.md على GitHub
+              </a>
+            </div>
+          `;
+        }
       }
     }
     loadLatestReport();
