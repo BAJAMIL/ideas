@@ -20,6 +20,14 @@ class OpenSooqSeller:
     rating_count: int
     verification_level: Optional[int]
 
+    @property
+    def verification_status(self) -> str:
+        if self.verification_level == 2:
+            return "Verified Dealer / Business"
+        elif self.verification_level == 1:
+            return "Verified Member"
+        return "Unverified"
+
 
 @dataclass
 class OpenSooqListing:
@@ -37,6 +45,8 @@ class OpenSooqListing:
     url: str
     description: Optional[str]
     image_count: int
+    model_year: Optional[str] = None
+    subtitle: Optional[str] = None
 
 
 class OpenSooqClient:
@@ -51,23 +61,8 @@ class OpenSooqClient:
         }
         self.client = httpx.Client(headers=self.headers, follow_redirects=True, timeout=timeout)
 
-    def search(self, query: str = "", category_id: Optional[int] = None, page: int = 1) -> List[OpenSooqListing]:
-        """Search OpenSooq KSA by keyword or category with pagination."""
-        params = []
-        if query:
-            params.append(f"PostSearch[term]={query}")
-        if category_id:
-            params.append(f"PostSearch[category_id]={category_id}")
-        if page > 1:
-            params.append(f"page={page}")
-        query_str = f"?{'&'.join(params)}" if params else ""
-        
-        url = f"{self.BASE_URL}/ar/find{query_str}"
-        resp = self.client.get(url)
-        if resp.status_code != 200:
-            return []
-
-        m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', resp.text)
+    def _parse_listings(self, html: str) -> List[OpenSooqListing]:
+        m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html)
         if not m:
             return []
 
@@ -79,6 +74,18 @@ class OpenSooqClient:
             clean_results = []
             for item in raw_items:
                 badges = item.get("post_badges") or []
+                
+                # Extract model year from starCps or subtitle or title
+                model_year = None
+                for star in item.get("starCps") or []:
+                    if "year" in star.get("icon", ""):
+                        model_year = star.get("label")
+                        break
+                if not model_year:
+                    m_year = re.search(r'\b(19\d{2}|20\d{2})\b', (item.get("subtitle") or "") + " " + (item.get("title") or ""))
+                    if m_year:
+                        model_year = m_year.group(1)
+
                 clean_results.append(
                     OpenSooqListing(
                         id=item.get("id"),
@@ -102,11 +109,39 @@ class OpenSooqClient:
                         url=f"{self.BASE_URL}{item.get('post_url')}",
                         description=item.get("masked_description"),
                         image_count=int(item.get("image_count") or 0),
+                        model_year=model_year,
+                        subtitle=item.get("subtitle"),
                     )
                 )
             return clean_results
         except Exception:
             return []
+
+    def get_cars(self, page: int = 1) -> List[OpenSooqListing]:
+        """Fetch cars for sale listings directly from the automotive section."""
+        query_str = f"?page={page}" if page > 1 else ""
+        url = f"{self.BASE_URL}/ar/حراج-السيارات/سيارات-للبيع{query_str}"
+        resp = self.client.get(url)
+        if resp.status_code != 200:
+            return []
+        return self._parse_listings(resp.text)
+
+    def search(self, query: str = "", category_id: Optional[int] = None, page: int = 1) -> List[OpenSooqListing]:
+        """Search OpenSooq KSA by keyword or category with pagination."""
+        params = []
+        if query:
+            params.append(f"PostSearch[term]={query}")
+        if category_id:
+            params.append(f"PostSearch[category_id]={category_id}")
+        if page > 1:
+            params.append(f"page={page}")
+        query_str = f"?{'&'.join(params)}" if params else ""
+        
+        url = f"{self.BASE_URL}/ar/find{query_str}"
+        resp = self.client.get(url)
+        if resp.status_code != 200:
+            return []
+        return self._parse_listings(resp.text)
 
 
 if __name__ == "__main__":

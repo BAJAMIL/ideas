@@ -60,11 +60,13 @@ class SallaMarketplaceClient:
             if c.get("name")
         ]
 
-    def list_apps(self, category_id: Optional[str] = None, page: int = 1, limit: int = 15) -> List[SallaAppItem]:
-        """Fetch apps by category with price, subscription terms, and merchant ratings."""
+    def list_apps(self, category_id: Optional[str] = None, q: Optional[str] = None, page: int = 1, limit: int = 15) -> List[SallaAppItem]:
+        """Fetch apps by category or query with price, subscription terms, and merchant ratings."""
         params: Dict[str, Any] = {"page": page, "limit": limit}
         if category_id:
-            params["category_id"] = category_id
+            params["category"] = category_id
+        if q:
+            params["q"] = q
 
         resp = self.client.get(f"{self.BASE_URL}/apps", params=params)
         resp.raise_for_status()
@@ -75,6 +77,9 @@ class SallaMarketplaceClient:
             plan_raw = a.get("plan") or {}
             rev_raw = a.get("reviews") or {}
             comp_raw = a.get("company") or {}
+            price_val = str(plan_raw.get("value")) if plan_raw.get("value") is not None else None
+            if plan_raw.get("prefix") and "ر.س" in plan_raw.get("prefix"):
+                price_val = plan_raw.get("prefix")
             results.append(
                 SallaAppItem(
                     id=a.get("id"),
@@ -83,7 +88,7 @@ class SallaMarketplaceClient:
                     logo_url=a.get("logo", ""),
                     plan=SallaAppPlan(
                         is_free=bool(plan_raw.get("is_free")),
-                        price=str(plan_raw.get("value")) if plan_raw.get("value") is not None else None,
+                        price=price_val,
                         suffix=plan_raw.get("suffix"),
                         plan_id=plan_raw.get("plan_id"),
                     ),
@@ -94,6 +99,12 @@ class SallaMarketplaceClient:
                 )
             )
         return results
+
+    def get_app_reviews(self, app_id: int, page: int = 1) -> List[Dict[str, Any]]:
+        """Fetch merchant reviews for a specific app."""
+        resp = self.client.get(f"{self.BASE_URL}/apps/{app_id}/reviews", params={"page": page})
+        resp.raise_for_status()
+        return resp.json().get("data", [])
 
 
 if __name__ == "__main__":
