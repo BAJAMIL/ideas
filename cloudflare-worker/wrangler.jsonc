@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "saudi-retail-edge-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "triggers": {
+    "crons": ["0 8 * * *"] // Runs daily at 08:00 AM AST
+  },
+  "observability": {
+    "enabled": true
+  }
+}
