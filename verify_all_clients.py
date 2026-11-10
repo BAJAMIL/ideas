@@ -45,8 +45,15 @@ def test_all():
     print(f"   Sabbar OK: {len(sabbar_jobs)} operational & retail jobs fetched with salaries.")
     assert len(sabbar_jobs) > 0, "Sabbar failed"
 
+    print("\n7. Running Etimad Government Tenders Test...")
+    from etimad_client import EtimadClient
+    etimad = EtimadClient()
+    tenders_res = etimad.get_tenders(page_index=1, page_size=5)
+    print(f"   Etimad OK: {len(tenders_res['tenders'])} tenders fetched out of {tenders_res['total_records']:,} active records.")
+    assert len(tenders_res['tenders']) > 0, "Etimad failed"
+
     print("\n" + "=" * 60)
-    print(">>> ALL 6 PRODUCTION MARKETPLACE CLIENTS FULLY VERIFIED! <<<")
+    print(">>> ALL PRODUCTION MARKETPLACE & B2B CLIENTS FULLY VERIFIED! <<<")
     print("=" * 60)
 
 if __name__ == "__main__":
