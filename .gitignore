@@ -32,4 +32,6 @@ analyze_jsonld.py
 search_comments_manifest.py
 probe_*.py
 parse_*.py
+.wrangler/
+*_dump.json
 

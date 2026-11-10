@@ -52,6 +52,27 @@ def test_all():
     print(f"   Etimad OK: {len(tenders_res['tenders'])} tenders fetched out of {tenders_res['total_records']:,} active records.")
     assert len(tenders_res['tenders']) > 0, "Etimad failed"
 
+    print("\n8. Running Jarir Bookstore Catalog Test...")
+    from jarir_client import JarirClient
+    jarir = JarirClient()
+    jarir_res = jarir.search_products("iphone", num_results=3)
+    print(f"   Jarir OK: {len(jarir_res['products'])} products fetched via Constructor.io AI discovery.")
+    assert len(jarir_res['products']) > 0, "Jarir failed"
+
+    print("\n9. Running eXtra Stores Electronics Test...")
+    from extra_client import ExtraClient
+    extra = ExtraClient()
+    extra_res = extra.search_products("iphone", rows=3)
+    print(f"   eXtra OK: {len(extra_res['products'])} consumer electronics fetched via Unbxd engine.")
+    assert len(extra_res['products']) > 0, "eXtra failed"
+
+    print("\n10. Running Kafiil Services & Projects Test...")
+    from kafiil_client import KafiilClient
+    kafiil = KafiilClient()
+    k_projs = kafiil.get_projects()
+    print(f"   Kafiil OK: {len(k_projs)} client project requests fetched.")
+    assert len(k_projs) > 0, "Kafiil failed"
+
     print("\n" + "=" * 60)
     print(">>> ALL PRODUCTION MARKETPLACE & B2B CLIENTS FULLY VERIFIED! <<<")
     print("=" * 60)
