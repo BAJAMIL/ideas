@@ -1,13 +1,13 @@
 # 🇸🇦 BAJAMIL Ideas — Autonomous Saudi & Arabic Digital Product Discovery Agent
 
-An autonomous daily research agent powered by the **Google Antigravity SDK (`google-antigravity`)** that mines **100% free APIs** every morning at **8:00 AM Saudi Time (AST)** to uncover profitable digital products, templates, Salla/Zid merchant tools, and micro-SaaS ideas for the **Saudi Arabian (KSA) & Arabic market**.
+An autonomous daily research agent powered by **OpenRouter free models** (with the **Google Antigravity SDK (`google-antigravity`)** as a fallback) that mines **100% free APIs** on a daily GitHub Actions schedule to uncover profitable digital products, templates, Salla/Zid merchant tools, and micro-SaaS ideas for the **Saudi Arabian (KSA) & Arabic market**.
 
 ---
 
 ## 🚀 How It Works (Zero Laptop Required)
 
-1. **GitHub Actions Cloud Scheduler** ([`.github/workflows/daily-ideas.yml`](.github/workflows/daily-ideas.yml)) wakes up daily at `05:00 UTC` (`08:00 AM Riyadh`).
-2. **Google Antigravity SDK Agent** ([`agent.py`](agent.py)) loads 4 specialized skills from [`.agents/skills/`](.agents/skills/):
+1. **GitHub Actions Cloud Scheduler** ([`.github/workflows/daily-ideas.yml`](.github/workflows/daily-ideas.yml)) runs the `30 1 * * *` cron daily at `01:30 UTC` (`04:30 AM Riyadh / AST`). CI first runs an import smoke test and the unit suite, then the agent.
+2. **Idea Agent** ([`agent.py`](agent.py)) loads 4 specialized skills from [`.agents/skills/`](.agents/skills/):
    - `customer-research` — Mines real Arabic & English verbatim pain points.
    - `evaluating-startup-ideas` & `idea-validation` — Scores ideas on demand, speed to build, and competition gap in KSA.
    - `offers` — Designs a complete Grand Slam Offer priced in SAR (`ر.س`).
@@ -40,9 +40,28 @@ An autonomous daily research agent powered by the **Google Antigravity SDK (`goo
 
 ## ⚙️ One-Time Setup (1 Minute)
 
-1. Get a free `GEMINI_API_KEY` from **[Google AI Studio](https://aistudio.google.com/app/api-keys)**.
-2. In this repository, go to **Settings → Secrets and variables → Actions → New repository secret**.
-3. Add:
-   - **Name:** `GEMINI_API_KEY`
-   - **Secret:** *(your Google AI Studio key)*
+The agent uses **OpenRouter free models** when `OPENROUTER_API_KEY` is set, and falls back to the **Google Antigravity SDK** when only `GEMINI_API_KEY` is set. At least one is required.
+
+1. Get a free **`OPENROUTER_API_KEY`** from **[OpenRouter](https://openrouter.ai/keys)** (primary engine). Optionally also get a free **`GEMINI_API_KEY`** from **[Google AI Studio](https://aistudio.google.com/app/api-keys)** (fallback engine).
+2. In this repository, go to **Settings → Secrets and variables → Actions → New repository secret** and add one or both of:
+   - `OPENROUTER_API_KEY`
+   - `GEMINI_API_KEY`
+3. `HARAJ_SERVER_KEY` is optional — see [`.env.example`](.env.example) and [`config.py`](config.py). It overrides the public Haraj client key.
 4. Go to the **[Actions tab](../../actions)**, click **Daily Saudi Digital Product Idea Discovery**, and click **Run workflow** to trigger your first report immediately!
+
+---
+
+## 🧪 Development & Verification
+
+The root-level `test_*.py` files are **one-off recon/probe scripts**, not unit tests — they make live network calls and are intentionally excluded from pytest via [`pytest.ini`](pytest.ini). The real suite lives in [`tests/`](tests/).
+
+```sh
+pip install -r requirements.txt
+pip install pytest
+python -c "import agent"     # import smoke test (catches missing declared deps)
+python -m pytest             # offline unit suite, no network calls
+```
+
+CI runs both gates before the daily agent, so a missing dependency or broken import fails the workflow instead of silently degrading to a single source.
+
+> Note: the daily report is generated from live public signals. Sources that fail are listed as `UNAVAILABLE` in a "Source availability" block and must not be reconstructed by the model — see [`signal_health.py`](signal_health.py).

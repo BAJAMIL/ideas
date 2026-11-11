@@ -41,6 +41,7 @@ import httpx
 
 from haraj_client import fetch_haraj_consumer_signals
 from marketplace_registry import MarketplaceRegistry
+from signal_health import health_block, INTEGRITY_RULES
 
 load_dotenv()
 
@@ -471,54 +472,94 @@ def generate_with_openrouter(system_prompt: str, user_prompt: str, api_key: str)
 
 async def collect_market_intelligence() -> str:
     """Mines live market signals across free Saudi Reddit RSS, Mostaql, Google News, Autocomplete, Trends, HN, and Product Hunt."""
-    signals = []
+    sections: dict[str, str] = {}
 
     # 1. Multi-tier Saudi & GCC Reddit mining
     print("   [+] Mining r/saudiarabia...")
-    signals.append(search_saudi_reddit("saudiarabia", "أحتاج OR مشكلة OR متجر OR تطبيق OR بديل OR سلة"))
+    sections["Reddit r/saudiarabia"] = search_saudi_reddit("saudiarabia", "أحتاج OR مشكلة OR متجر OR تطبيق OR بديل OR سلة")
     print("   [+] Mining r/SaudiProfessionals...")
-    signals.append(search_saudi_reddit("SaudiProfessionals", "عمل OR دخل OR قالب OR أداة OR استشارة OR برنامج"))
+    sections["Reddit r/SaudiProfessionals"] = search_saudi_reddit("SaudiProfessionals", "عمل OR دخل OR قالب OR أداة OR استشارة OR برنامج")
     print("   [+] Mining r/Riyadh...")
-    signals.append(search_saudi_reddit("Riyadh", "فعاليات OR استراحة OR جمعة OR توصيل OR مشروع OR فكرة"))
+    sections["Reddit r/Riyadh"] = search_saudi_reddit("Riyadh", "فعاليات OR استراحة OR جمعة OR توصيل OR مشروع OR فكرة")
 
     # 2. Mostaql & Khamsat verified paid and unmet project demands
     print("   [+] Mining Mostaql verified paid project demands...")
-    signals.append(fetch_mostaql_projects(limit=10))
+    sections["Mostaql paid projects"] = fetch_mostaql_projects(limit=10)
     print("   [+] Mining Khamsat unmet service requests...")
-    signals.append(fetch_khamsat_unmet_requests(limit=10))
+    sections["Khamsat unmet requests"] = fetch_khamsat_unmet_requests(limit=10)
 
     # 3. Google News Saudi Arabia
     print("   [+] Mining Google News Saudi Arabia (E-Commerce & Market trends)...")
-    signals.append(fetch_saudi_google_news(limit=8))
+    sections["Google News Saudi Arabia"] = fetch_saudi_google_news(limit=8)
 
     # 4. Google Saudi Autocomplete
     print("   [+] Mining Google Saudi Arabia autocomplete queries...")
     arabic_seeds = ["قالب نوشن", "نموذج اكسل", "حاسبة", "متجر سلة", "بديل", "طريقة حل", "اشتراك"]
     for seed in arabic_seeds:
-        signals.append(search_saudi_google_autocomplete(seed, language="ar"))
+        sections[f"Google Autocomplete (ar) / {seed}"] = search_saudi_google_autocomplete(seed, language="ar")
 
     english_seeds = ["saudi template", "zatca invoice", "saudi digital product"]
     for seed in english_seeds:
-        signals.append(search_saudi_google_autocomplete(seed, language="en"))
+        sections[f"Google Autocomplete (en) / {seed}"] = search_saudi_google_autocomplete(seed, language="en")
 
     # 5. Google Trends Saudi Arabia
     print("   [+] Mining Google Trends Saudi Arabia...")
-    signals.append(fetch_saudi_google_trends())
+    sections["Google Trends Saudi Arabia"] = fetch_saudi_google_trends()
 
-    # 6. Saudi Marketplaces & Enterprise Platforms (Haraj, Salla, OpenSooq, Syarah, Sabbar)
-    print("   [+] Mining unified Saudi enterprise marketplaces (Haraj, Salla, OpenSooq, Syarah, Sabbar)...")
+    # 6. Saudi Marketplaces & Enterprise Platforms (12 platforms)
+    print("   [+] Mining unified Saudi enterprise marketplaces (12 platforms)...")
     try:
         registry = MarketplaceRegistry()
-        signals.append(registry.collect_all_signals())
+        sections["Unified Saudi marketplaces"] = registry.collect_all_signals()
     except Exception as exc:
         print(f"       [!] Marketplace registry error: {exc}. Falling back to Haraj...")
-        signals.append(fetch_haraj_consumer_signals(limit_per_cat=3))
+        sections["Haraj fallback"] = fetch_haraj_consumer_signals(limit_per_cat=3)
 
     # 7. Global launches for Saudi localization
     print("   [+] Mining Hacker News & Product Hunt launches...")
-    signals.append(search_global_launches_for_saudi_localization())
+    sections["Hacker News & Product Hunt"] = search_global_launches_for_saudi_localization()
 
-    return "\n\n".join(signals)
+    # The availability block goes first: the model must see which sources failed
+    # before it reads any signal, so it cannot silently improvise missing data.
+    return "\n\n".join([health_block(sections), *sections.values()])
+
+
+def build_prompt(market_data: str, today_str: str) -> str:
+    """Builds the daily report prompt, including the data-integrity guardrail."""
+    return f"""Today is {today_str}. Analyze the following LIVE Saudi & Arabic market intelligence gathered today:
+
+---
+{market_data}
+---
+
+{INTEGRITY_RULES}
+
+Synthesize these live signals into an executive, highly actionable Markdown report in Bilingual format (English structure + Arabic product terms/copy):
+
+## Part 1: Live Saudi Market Signals & Verbatim Pain Points
+- Identify 3–5 real pain points, trending consumer search spikes, and product pricing arbitrage from the mined Haraj marketplace data, Reddit posts, Mostaql paid project requests, autocomplete keywords, and news trends.
+- Include verbatim quotes/terms where applicable (e.g. buyer bids from Haraj 'السوم', exact search terms, verbatim complaints).
+
+## Part 2: Top 5 Validated Product Ideas for KSA (The Arbitrage & Opportunity Matrix)
+For each idea (mixing high-margin physical products and zero-inventory consumer digital products):
+1. **Product Name** (Arabic & English)
+2. **Category** (Digital Template / Micro-SaaS / Physical High-Markup 3x–6x / Salla-Zid Plugin)
+3. **Target Saudi Audience** (Youth, Gamers, Women, Salla Merchants, Istiraha Gatherings, etc.)
+4. **Market Arbitrage & Pricing Matrix in SAR (ر.س)**:
+   - Estimated Wholesale / Sourcing Cost (1688 / Taobao / Local Wholesale) in SAR
+   - Current Haraj Secondary Market Selling Price in SAR
+   - Target Salla / TikTok Shop Retail Price in SAR
+   - Gross Margin Multiple (e.g. 4.5x Markup)
+   - Tabby / Tamara installment breakdown (e.g. 4x monthly payments)
+5. **Scores**: Demand Score (1-10), Build/Source Speed (1-10), Competition Gap (1-10)
+
+## Part 3: Deep-Dive Grand Slam Offer Blueprint for Idea #1
+- **Arabic Product Name & Hook**
+- **Core Deliverable**
+- **Bonus Stack** (2–3 high-perceived-value digital bonuses)
+- **Risk-Reversal Guarantee** (e.g. 100% money-back if not satisfied within 14 days)
+- **Launch Plan**: Exact 48-Hour Validation Plan on X (Twitter), TikTok Shop / Salla / Gumroad with Arabic copy hooks.
+"""
 
 
 async def run_daily_discovery() -> Path:
@@ -550,39 +591,7 @@ async def run_daily_discovery() -> Path:
     market_data = await collect_market_intelligence()
     print(f"      Gathered {len(market_data)} characters of live market intelligence.")
 
-    prompt = f"""Today is {today_str}. Analyze the following LIVE Saudi & Arabic market intelligence gathered today:
-
----
-{market_data}
----
-
-Synthesize these live signals into an executive, highly actionable Markdown report in Bilingual format (English structure + Arabic product terms/copy):
-
-## Part 1: Live Saudi Market Signals & Verbatim Pain Points
-- Identify 3–5 real pain points, trending consumer search spikes, and product pricing arbitrage from the mined Haraj marketplace data, Reddit posts, Mostaql paid project requests, autocomplete keywords, and news trends.
-- Include verbatim quotes/terms where applicable (e.g. buyer bids from Haraj 'السوم', exact search terms, verbatim complaints).
-
-## Part 2: Top 5 Validated Product Ideas for KSA (The Arbitrage & Opportunity Matrix)
-For each idea (mixing high-margin physical products and zero-inventory consumer digital products):
-1. **Product Name** (Arabic & English)
-2. **Category** (Digital Template / Micro-SaaS / Physical High-Markup 3x–6x / Salla-Zid Plugin)
-3. **Target Saudi Audience** (Youth, Gamers, Women, Salla Merchants, Istiraha Gatherings, etc.)
-4. **Market Arbitrage & Pricing Matrix in SAR (ر.س)**:
-   - Estimated Wholesale / Sourcing Cost (1688 / Taobao / Local Wholesale) in SAR
-   - Current Haraj Secondary Market Selling Price in SAR
-   - Target Salla / TikTok Shop Retail Price in SAR
-   - Gross Margin Multiple (e.g. 4.5x Markup)
-   - Tabby / Tamara installment breakdown (e.g. 4x monthly payments)
-5. **Scores**: Demand Score (1-10), Build/Source Speed (1-10), Competition Gap (1-10)
-
-## Part 3: Deep-Dive Grand Slam Offer Blueprint for Idea #1
-- **Arabic Product Name & Hook**
-- **Core Deliverable**
-- **Bonus Stack** (2–3 high-perceived-value digital bonuses)
-- **Risk-Reversal Guarantee** (e.g. 100% money-back if not satisfied within 14 days)
-- **Launch Plan**: Exact 48-Hour Validation Plan on X (Twitter), TikTok Shop / Salla / Gumroad with Arabic copy hooks.
-"""
-
+    prompt = build_prompt(market_data, today_str)
 
     # Step 2: Generate report using OpenRouter free models (or Gemini fallback)
     if openrouter_key:

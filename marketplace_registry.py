@@ -17,6 +17,7 @@ Provides a unified API and live health check across all reverse-engineered platf
 
 from typing import Dict, Any, List
 import time
+from signal_health import render_signals
 from haraj_client import HarajClient
 from opensooq_client import OpenSooqClient
 from salla_client import SallaMarketplaceClient
@@ -212,6 +213,20 @@ class MarketplaceRegistry:
             report["Golden Scent (Luxury Perfumes)"] = {"status": "ERROR", "error": str(e)}
 
         return report
+
+    def collect_all_signals(self) -> str:
+        """Renders live signals from all 12 platforms for the daily idea agent.
+
+        run_health_check() already isolates each platform, so a single failure is
+        reported as UNAVAILABLE rather than dropping the other eleven.
+        """
+        try:
+            return render_signals(self.run_health_check())
+        except Exception as exc:
+            return (
+                "### Unified Saudi marketplace signals (12 platforms)\n"
+                f"- [UNAVAILABLE] all platforms: {exc}"
+            )
 
 
 if __name__ == "__main__":

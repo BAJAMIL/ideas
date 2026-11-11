@@ -51,6 +51,12 @@ export default {
     const q = url.searchParams.get("q") || "laptop";
     const lang = url.searchParams.get("lang") || "en";
 
+    // Route: /api/jarir/categories -> Full category taxonomy tree with icons & counts
+    if (url.pathname === "/api/jarir/categories") {
+      const categories = await fetchJarirCategories(lang);
+      return jsonResponse(categories, cache, cacheKey, ctx, 86400); // 24-hour edge cache
+    }
+
     // Route: /api/jarir -> Dedicated Jarir search
     if (url.pathname === "/api/jarir") {
       const jarirData = await fetchJarir(q, lang, url.searchParams);
@@ -123,6 +129,15 @@ async function fetchJarir(query: string, lang: string, params: URLSearchParams) 
   const brand = params.get("brand");
   if (brand) targetUrl.searchParams.set("filters[brand]", brand);
 
+  const format = params.get("format") || params.get("bofo");
+  if (format) targetUrl.searchParams.set("filters[bofo]", format);
+
+  const categoryDesc = params.get("category_desc") || params.get("productcode_description");
+  if (categoryDesc) targetUrl.searchParams.set("filters[productcode_description]", categoryDesc);
+
+  const paperSize = params.get("size") || params.get("pasi");
+  if (paperSize) targetUrl.searchParams.set("filters[pasi]", paperSize);
+
   const ram = params.get("ram");
   if (ram) targetUrl.searchParams.set("filters[symm]", ram);
 
@@ -136,15 +151,23 @@ async function fetchJarir(query: string, lang: string, params: URLSearchParams) 
 
   return {
     total: data.response?.total_num_results || 0,
-    products: results.map((r: any) => ({
-      source: "Jarir Bookstore",
-      sku: r.data?.sku || r.data?.id,
-      title: r.value,
-      price_sar: parseFloat(r.data?.price || 0),
-      brand: r.data?.metadata?.brand || r.data?.brand,
-      url: r.data?.url ? `https://www.jarir.com/sa-${lang}/${r.data.url}` : null,
-      image: `https://ak-asset.jarir.com/akeneo-prod/asset/saas/${r.data?.sku || r.data?.id}.jpg`,
-    })),
+    products: results.map((r: any) => {
+      const meta = r.data?.metadata || {};
+      return {
+        source: "Jarir Bookstore",
+        sku: r.data?.sku || r.data?.id,
+        title: r.value,
+        price_sar: parseFloat(r.data?.price || meta.price || 0),
+        brand: meta.brand || r.data?.brand || null,
+        author: meta.auth || null,
+        book_format: meta.bofo || null,
+        isbn: meta.isbn || null,
+        paper_size: meta.pasi || null,
+        category: meta.productcode_description || null,
+        url: r.data?.url ? `https://www.jarir.com/sa-${lang}/${r.data.url}` : null,
+        image: `https://ak-asset.jarir.com/akeneo-prod/asset/saas/${r.data?.sku || r.data?.id}.jpg`,
+      };
+    }),
   };
 }
 
@@ -214,6 +237,96 @@ async function fetchNoon(query: string, lang: string) {
   } catch (e) {
     return { total: 0, products: [] };
   }
+}
+
+/**
+ * Fetch and parse full category taxonomy tree from Jarir Nuxt state
+ */
+async function fetchJarirCategories(lang: string) {
+  const res = await fetch(`https://www.jarir.com/sa-${lang}/`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch Jarir homepage: ${res.status}`);
+  const html = await res.text();
+  const match = html.match(/<script[^>]*id="__NUXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!match) throw new Error("Could not find __NUXT_DATA__ in Jarir page");
+
+  const rawData = JSON.parse(match[1]);
+
+  function resolve(val: any, seen = new Set<number>()): any {
+    if (typeof val === "number" && val >= 0 && val < rawData.length) {
+      if (seen.has(val)) return null;
+      seen.add(val);
+      const target = rawData[val];
+      if (typeof target === "string" || typeof target === "number" || typeof target === "boolean" || target === null) {
+        return target;
+      }
+      if (Array.isArray(target)) {
+        if (target.length === 2 && (target[0] === "Reactive" || target[0] === "ShallowReactive")) {
+          return resolve(target[1], new Set(seen));
+        }
+        return target.map((x: any) => resolve(x, new Set(seen)));
+      }
+      if (typeof target === "object") {
+        const out: any = {};
+        for (const [k, v] of Object.entries(target)) {
+          out[k] = resolve(v, new Set(seen));
+        }
+        return out;
+      }
+      return target;
+    }
+    if (Array.isArray(val)) {
+      if (val.length === 2 && (val[0] === "Reactive" || val[0] === "ShallowReactive")) {
+        return resolve(val[1], seen);
+      }
+      return val.map((x: any) => resolve(x, seen));
+    }
+    if (typeof val === "object" && val !== null) {
+      const out: any = {};
+      for (const [k, v] of Object.entries(val)) {
+        out[k] = resolve(v, seen);
+      }
+      return out;
+    }
+    return val;
+  }
+
+  const root2 = resolve(2);
+  let categoriesRef: any = null;
+  const menuKey = `header-mobile-cat-menu-sa_${lang}`;
+  if (Array.isArray(root2) && root2.length > 1 && typeof root2[1] === "object") {
+    const menu = root2[1][menuKey] || root2[1]["header-mobile-cat-menu-sa_en"];
+    if (menu) categoriesRef = menu.categories;
+  }
+
+  const rawCategories = Array.isArray(categoriesRef) ? categoriesRef : resolve(categoriesRef) || [];
+
+  function cleanCategory(cat: any, level = 1): any {
+    if (Array.isArray(cat) && cat.length === 2) cat = cat[1];
+    const children = (cat.children_data || [])
+      .map((c: any) => cleanCategory(c, level + 1))
+      .filter((c: any) => c.name);
+
+    return {
+      name: cat.name || "",
+      slug: cat.slug || "",
+      category_code: String(cat.category_code || cat.id || ""),
+      id: cat.id,
+      product_count: cat.product_count || 0,
+      level,
+      url: cat.url_path ? `https://www.jarir.com/sa-${lang}/${cat.url_path}` : "",
+      icon: cat.category_icon_image || "",
+      color: cat.category_menu_color || "",
+      subcategories_count: children.length,
+      subcategories: children,
+    };
+  }
+
+  return rawCategories.map((c: any) => cleanCategory(c, 1)).filter((c: any) => c.name);
 }
 
 function jsonResponse(

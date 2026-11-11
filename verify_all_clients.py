@@ -52,12 +52,27 @@ def test_all():
     print(f"   Etimad OK: {len(tenders_res['tenders'])} tenders fetched out of {tenders_res['total_records']:,} active records.")
     assert len(tenders_res['tenders']) > 0, "Etimad failed"
 
-    print("\n8. Running Jarir Bookstore Catalog Test...")
+    print("\n8. Running Jarir Bookstore Catalog Test (Tech, Books & Stationery)...")
     from jarir_client import JarirClient
     jarir = JarirClient()
     jarir_res = jarir.search_products("iphone", num_results=3)
-    print(f"   Jarir OK: {len(jarir_res['products'])} products fetched via Constructor.io AI discovery.")
-    assert len(jarir_res['products']) > 0, "Jarir failed"
+    print(f"   Jarir Tech OK: {len(jarir_res['products'])} tech products fetched via Constructor.io.")
+    assert len(jarir_res['products']) > 0, "Jarir tech failed"
+
+    # Test Jarir's 710,000+ Book Catalog
+    books_res = jarir.search_books("رواية", lang="ar", num_results=3)
+    print(f"   Jarir Books OK: {len(books_res['products'])} Arabic books fetched (Sample: '{books_res['products'][0].title}' by {books_res['products'][0].author}, format: {books_res['products'][0].book_format}).")
+    assert len(books_res['products']) > 0, "Jarir books failed"
+
+    # Test ISBN lookup
+    isbn_book = jarir.get_book_by_isbn("9781408855713")
+    assert isbn_book is not None, "Jarir ISBN resolution failed"
+    print(f"   Jarir ISBN OK: Resolved '{isbn_book.title}' by {isbn_book.author} (ISBN: {isbn_book.isbn}).")
+
+    # Test Stationery & School Supplies
+    stat_res = jarir.search_stationery("دفتر", paper_size="A4", brand="Roco", num_results=3)
+    print(f"   Jarir Stationery OK: {len(stat_res['products'])} stationery items fetched (Sample: '{stat_res['products'][0].title}', size: {stat_res['products'][0].paper_size}).")
+    assert len(stat_res['products']) > 0, "Jarir stationery failed"
 
     print("\n9. Running eXtra Stores Electronics Test...")
     from extra_client import ExtraClient
