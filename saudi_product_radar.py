@@ -124,10 +124,12 @@ class SaudiProductRadar:
         )
 
     # -------------------------------------------------------------------------
-    # 1. Demand & Search Intent Signals (Google Autocomplete KSA)
+    # 1. Demand & Search Intent Signals (Google Autocomplete KSA & Amazon SA)
     # -------------------------------------------------------------------------
     def get_search_intent(self, seed: str, lang: str = "ar") -> List[str]:
-        """Captures live consumer search intent from Google Saudi Arabia."""
+        """Captures live consumer search intent from Google Saudi Arabia and Amazon SA."""
+        intents: List[str] = []
+        # 1. Google KSA
         url = "https://suggestqueries.google.com/complete/search"
         params = {
             "client": "chrome",
@@ -140,9 +142,31 @@ class SaudiProductRadar:
             if resp.status_code == 200:
                 data = resp.json()
                 if len(data) > 1 and isinstance(data[1], list):
-                    return [str(item) for item in data[1][:8]]
+                    intents.extend([str(item) for item in data[1][:5]])
         except Exception:
             pass
+
+        # 2. Amazon SA Open Autocomplete API
+        try:
+            amz_url = "https://completion.amazon.sa/api/2017/suggestions"
+            amz_params = {
+                "mid": "A17E79C6D8DWNP",
+                "alias": "aps",
+                "prefix": seed,
+                "lop": "ar_AE" if lang == "ar" else "en_AE",
+            }
+            amz_resp = self.http_client.get(amz_url, params=amz_params)
+            if amz_resp.status_code == 200:
+                amz_data = amz_resp.json()
+                for s in amz_data.get("suggestions", [])[:5]:
+                    val = s.get("value")
+                    if val and val not in intents:
+                        intents.append(val)
+        except Exception:
+            pass
+
+        if intents:
+            return intents[:8]
         # Fallback to Jarir's live autocomplete suggestions
         try:
             jarir_suggestions = self.jarir.get_search_suggestions(seed, lang=lang)
