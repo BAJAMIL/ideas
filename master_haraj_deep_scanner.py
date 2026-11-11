@@ -1,3 +1,4 @@
+from config import HARAJ_SERVER_KEY
 import httpx
 import re
 import json
@@ -6,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 BASE_HEADERS = {
     'User-Agent': 'HarajServer',
-    'BETWEEN-SERVERS-KEY': 'haraj_server_8472965246285103',
+    'BETWEEN-SERVERS-KEY': HARAJ_SERVER_KEY,
     'Content-Type': 'application/json'
 }
 

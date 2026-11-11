@@ -3,6 +3,7 @@ Haraj Private API Client (Typed Python 3.12+)
 Reverse-engineered from Haraj's web application layer (React Router 7 / Remix & Apollo GraphQL).
 """
 
+from config import HARAJ_SERVER_KEY
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 import httpx
@@ -13,7 +14,7 @@ MATJAR_GATEWAY = "https://matjar.haraj.com.sa/graphql"
 
 DEFAULT_HEADERS = {
     "User-Agent": "HarajServer",
-    "BETWEEN-SERVERS-KEY": "haraj_server_8472965246285103",
+    "BETWEEN-SERVERS-KEY": HARAJ_SERVER_KEY,
     "Content-Type": "application/json"
 }
 
