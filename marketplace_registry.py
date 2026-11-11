@@ -30,6 +30,7 @@ from etimad_client import EtimadClient
 from kafiil_client import KafiilClient
 from niceone_client import NiceOneClient
 from goldenscent_client import GoldenScentClient
+from lulu_client import LuluClient
 
 
 class MarketplaceRegistry:
@@ -48,6 +49,7 @@ class MarketplaceRegistry:
         self.kafiil = KafiilClient()
         self.niceone = NiceOneClient()
         self.goldenscent = GoldenScentClient()
+        self.lulu = LuluClient()
 
     def run_health_check(self) -> Dict[str, Any]:
         """Test live connectivity and data extraction across all platforms."""
@@ -211,6 +213,20 @@ class MarketplaceRegistry:
             }
         except Exception as e:
             report["Golden Scent (Luxury Perfumes)"] = {"status": "ERROR", "error": str(e)}
+
+        # 13. Lulu Hypermarket
+        t0 = time.time()
+        try:
+            l_res = self.lulu.search_products("apple", page=1)
+            l_prods = l_res.get("products", [])
+            report["Lulu Hypermarket"] = {
+                "status": "ONLINE",
+                "items_count": len(l_prods),
+                "latency_sec": round(time.time() - t0, 2),
+                "sample": f"{l_prods[0].name} ({l_prods[0].price} SAR)" if l_prods else None
+            }
+        except Exception as e:
+            report["Lulu Hypermarket"] = {"status": "ERROR", "error": str(e)}
 
         return report
 
