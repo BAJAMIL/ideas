@@ -27,7 +27,7 @@ An autonomous daily research agent powered by **OpenRouter free models** (with t
    - **Etimad Saudi Government Procurement (`etimad_client.py`):** Reverse-engineered client for `tenders.etimad.sa` giving programmatic access to 290,000+ Saudi ministry tenders, RFPs, and procurement budgets.
    - **Kafiil Arabic Digital Services & Gigs (`kafiil_client.py`):** Reverse-engineered from `kafiil.com` to extract client freelance project briefs, custom software requirements, Excel automations, and digital templates.
    - **Unified Marketplace Registry (`marketplace_registry.py`):** Central multi-target orchestrator providing live health checks, uniform extraction, and latency benchmarking across all platforms.
-   - **Google News Saudi Arabia RSS (`hl=ar`, `gl=SA`):** Tracks real-time Saudi retail, e-commerce, startup, and fintech news developments.
+   - **Google News Saudi Arabia RSS (`hl=ar`, `gl=SA`) — OPT-IN / DISABLED BY DEFAULT:** Tracks real-time Saudi retail news, but Google News RSS is licensed for **personal, non-commercial use only** ([Terms of Use §2](https://www.google.com/intl/en_us/terms_google_news.html)), while this agent generates commercial product ideas. Set `GOOGLE_NEWS_RSS_ENABLED=1` only for personal experimentation; see [ToS & licensing](#-tos--licensing) below.
    - **Google Saudi Autocomplete API (`gl=sa`, `hl=ar` & `hl=en`):** Uncovers real-time search demand for Arabic Notion templates (`قالب نوشن`), Excel sheets (`نموذج إكسل`), calculators (`حاسبة`), Salla/Zid tools, and ZATCA helpers.
    - **Google Trends Saudi Arabia RSS (`geo=SA`):** Captures daily rising search spikes across KSA.
    - **Hacker News Algolia API & Product Hunt Feed:** Spots newly validated global digital products and micro-SaaS tools ready to be localized for Arabic RTL and Saudi buyers.
@@ -65,3 +65,13 @@ python -m pytest             # offline unit suite, no network calls
 CI runs both gates before the daily agent, so a missing dependency or broken import fails the workflow instead of silently degrading to a single source.
 
 > Note: the daily report is generated from live public signals. Sources that fail are listed as `UNAVAILABLE` in a "Source availability" block and must not be reconstructed by the model — see [`signal_health.py`](signal_health.py).
+
+---
+
+## ⚖️ ToS & licensing
+
+**This project's own code is MIT licensed** — see [`LICENSE`](LICENSE). That license covers the source in this repository only; it does **not** grant any rights to the third-party data the agent queries.
+
+**Google News RSS is disabled by default.** Its [Terms of Use §2](https://www.google.com/intl/en_us/terms_google_news.html) and the feed's own `<copyright>` element restrict it to *"personal, non-commercial use"* and forbid using it "to sell a product or service". This agent generates priced commercial product ideas, so feeding that RSS into its pipeline falls outside the license. `GOOGLE_NEWS_RSS_ENABLED` defaults to `False` in [`config.py`](config.py); when disabled, no request is made and the source is not even listed in the report's health block. Enabling it (`GOOGLE_NEWS_RSS_ENABLED=1`) is intended only for personal, non-commercial experimentation and is your responsibility.
+
+A full **third-party source ToS / `robots.txt` audit** is in [`docs/TOS_AUDIT.md`](docs/TOS_AUDIT.md). It found concrete high-risk items — most notably Reddit's `User-agent: * Disallow: /` plus its non-commercial Public Content Policy, and robots-disallowed paths used by OpenSooq, Aqar, Nice One and Golden Scent. **No source is declared "compliant"**; several terms could not be retrieved and are recorded as UNCLEAR. Before any commercial deployment, review each source's terms and obtain the appropriate rights — this is research, not legal advice.
