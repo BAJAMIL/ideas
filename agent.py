@@ -7,7 +7,7 @@ Equipped with:
 - 100% Free APIs & Signals tailored to the Saudi (KSA) & Arabic market:
   1. Multi-tier Saudi Reddit Mining (`r/saudiarabia`, `r/SaudiProfessionals`, `r/Riyadh`) with RSS query engine + Arctic Shift fallback (bypasses 403 blocks)
   2. Mostaql Real Paid Freelance Projects (extracts live paid market demand in Arabic)
-  3. Google News Saudi Arabia RSS (`hl=ar`, `gl=SA`) for real-time market shifts & e-commerce trends
+  3. Google News Saudi Arabia RSS (`hl=ar`, `gl=SA`) — OPT-IN / DISABLED by default (personal, non-commercial use only; see config.GOOGLE_NEWS_RSS_ENABLED)
   4. Google Autocomplete API localized to Saudi Arabia (`gl=sa`, `hl=ar` & `hl=en`)
   5. Google Trends Daily RSS for Saudi Arabia (`geo=SA`)
   6. Hacker News Algolia & Product Hunt RSS (for global ideas ready for Saudi/Arabic localization)
@@ -39,6 +39,7 @@ import xml.etree.ElementTree as ET
 from dotenv import load_dotenv
 import httpx
 
+import config
 from haraj_client import fetch_haraj_consumer_signals
 from marketplace_registry import MarketplaceRegistry
 from signal_health import health_block, INTEGRITY_RULES
@@ -276,7 +277,14 @@ def fetch_saudi_google_news(
     query: str = "سلة OR زد OR تجارة إلكترونية OR تمارا OR تابي OR منشآت OR ريادة أعمال",
     limit: int = 8,
 ) -> str:
-    """Fetches real-time Saudi Arabian e-commerce, digital business, and startup news via Google News RSS."""
+    """Fetches real-time Saudi Arabian e-commerce and startup news via Google News RSS.
+
+    ToS: Google News RSS is licensed for personal, non-commercial use only
+    (https://www.google.com/intl/en_us/terms_google_news.html, section 2). This
+    agent generates commercial product ideas, so this function is only called
+    when config.GOOGLE_NEWS_RSS_ENABLED is explicitly opted into. Do not enable
+    it for a commercial pipeline without obtaining appropriate rights.
+    """
     encoded_q = urllib.parse.quote(query)
     url = f"https://news.google.com/rss/search?q={encoded_q}&hl=ar&gl=SA&ceid=SA:ar"
     try:
@@ -488,9 +496,10 @@ async def collect_market_intelligence() -> str:
     print("   [+] Mining Khamsat unmet service requests...")
     sections["Khamsat unmet requests"] = fetch_khamsat_unmet_requests(limit=10)
 
-    # 3. Google News Saudi Arabia
-    print("   [+] Mining Google News Saudi Arabia (E-Commerce & Market trends)...")
-    sections["Google News Saudi Arabia"] = fetch_saudi_google_news(limit=8)
+    # 3. Google News Saudi Arabia (opt-in, disabled by default for ToS reasons)
+    if config.GOOGLE_NEWS_RSS_ENABLED:
+        print("   [+] Mining Google News Saudi Arabia (opt-in, E-Commerce & Market trends)...")
+        sections["Google News Saudi Arabia"] = fetch_saudi_google_news(limit=8)
 
     # 4. Google Saudi Autocomplete
     print("   [+] Mining Google Saudi Arabia autocomplete queries...")

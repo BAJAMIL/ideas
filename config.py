@@ -9,3 +9,13 @@ default without editing any client.
 import os
 
 HARAJ_SERVER_KEY = os.environ.get("HARAJ_SERVER_KEY", "haraj_server_8472965246285103")
+
+# Google News RSS is licensed for personal, non-commercial use only
+# (https://www.google.com/intl/en_us/terms_google_news.html, section 2, and the
+# feed's own <copyright> element). This agent produces commercial product ideas,
+# so the source is DISABLED by default and must be explicitly opted into.
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+GOOGLE_NEWS_RSS_ENABLED = (
+    os.environ.get("GOOGLE_NEWS_RSS_ENABLED", "").strip().lower() in _TRUTHY
+)
